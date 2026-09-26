@@ -48,7 +48,7 @@ export default function AboutPage() {
       </div>
 
       <h2 className="mt-10 text-3xl">How to use it</h2>
-      <ol className="mt-3 list-decimal space-y-2 pl-6 marker:font-bold marker:text-brown">
+      <ol className="mt-3 list-decimal space-y-2 pl-6 marker:font-bold marker:text-brown-dark">
         <li>
           On the <Link href="/" className="font-bold text-brown-dark underline">home page</Link>, type the ingredients you have or tap the suggestions.
         </li>
@@ -64,7 +64,7 @@ export default function AboutPage() {
       <div className="mt-3 space-y-2">
         {FAQ.map((f) => (
           <details key={f.q} className={`${card} group p-4`}>
-            <summary className="cursor-pointer font-extrabold text-ink marker:text-brown">{f.q}</summary>
+            <summary className="cursor-pointer font-extrabold text-ink marker:text-brown-dark">{f.q}</summary>
             <p className="mt-2 text-ink">{f.a}</p>
           </details>
         ))}

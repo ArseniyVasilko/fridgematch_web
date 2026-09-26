@@ -41,6 +41,8 @@
   --shadow-card: 0 1px 2px rgb(91 61 40 / 0.06), 0 4px 14px rgb(91 61 40 / 0.06);
 }
 
+/* base styles live in a layer so Tailwind utilities (e.g. font-sans) can override them */
+@layer base {
 html {
   background: var(--color-cream);
 }
@@ -65,6 +67,7 @@ h3,
   outline: 3px solid var(--color-brown);
   outline-offset: 2px;
   border-radius: 6px;
+}
 }
 
 @media (prefers-reduced-motion: reduce) {

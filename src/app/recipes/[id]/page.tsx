@@ -72,7 +72,10 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
     ? recipesUrl({ i: ingredients, pantry: usePantry, basics: basics ? null : "0" })
     : "/recipes";
   const steps = toSteps(recipe.instructions);
-  const tags = recipe.tags?.split(",").map((t) => t.trim()).filter(Boolean) ?? [];
+  const shown = new Set([recipe.category, recipe.area].filter(Boolean).map((t) => t!.toLowerCase()));
+  const tags = [...new Set(recipe.tags?.split(",").map((t) => t.trim()).filter(Boolean) ?? [])].filter(
+    (t) => !shown.has(t.toLowerCase()),
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-5">

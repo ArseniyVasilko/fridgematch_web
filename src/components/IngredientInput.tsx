@@ -137,7 +137,7 @@ export function IngredientInput({
               onKeyDown={onKeyDown}
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 120)}
-              placeholder={items.length ? "Add another…" : "Enter ingredients (e.g. chicken, rice, broccoli)"}
+              placeholder={items.length ? "Add another…" : "e.g. chicken, rice, tomato…"}
               className="min-w-[8rem] flex-1 bg-transparent py-1.5 text-ink placeholder:text-muted/80 focus:outline-none"
               aria-label="Ingredient"
               role="combobox"

@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "./db";
-import { slugifyIngredient } from "./ingredients";
+import { coreIngredient, slugifyIngredient } from "./ingredients";
 import { rankRecipes, evaluateRecipe, type CatalogueRecipe, type UserIngredient, type MatchOptions } from "./matching";
 
 /**
@@ -50,10 +50,11 @@ export async function browseRecipes({ q, category }: { q?: string | null; catego
   if (category) recipes = recipes.filter((r) => r.category === category);
   const term = q?.trim().toLowerCase();
   if (term) {
+    const core = coreIngredient(term);
     recipes = recipes.filter(
       (r) =>
         r.name.toLowerCase().includes(term) ||
-        r.ingredients.some((i) => i.name.toLowerCase().includes(term)) ||
+        r.ingredients.some((i) => i.name.toLowerCase().includes(term) || coreIngredient(i.name) === core) ||
         (r.area ?? "").toLowerCase() === term ||
         (r.category ?? "").toLowerCase() === term,
     );

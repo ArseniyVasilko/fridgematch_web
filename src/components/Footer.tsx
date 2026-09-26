@@ -16,7 +16,6 @@ export function Footer() {
           </ul>
           <ul className="space-y-1.5">
             <li><Link className="hover:text-brown-dark hover:underline" href="/about">About / Help</Link></li>
-            <li><Link className="hover:text-brown-dark hover:underline" href="/login">Log in</Link></li>
           </ul>
         </nav>
         <p className="max-w-xs text-xs">

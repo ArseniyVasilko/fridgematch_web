@@ -43,7 +43,9 @@ function ItemRow({ item }: { item: PantryItemWithName }) {
           </p>
         )}
       </div>
-      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${BADGE[status]}`}>{expiryLabel(item.expiryDate)}</span>
+      <div className="order-last basis-full sm:order-none sm:basis-auto">
+        <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold ${BADGE[status]}`}>{expiryLabel(item.expiryDate)}</span>
+      </div>
       <PantryItemActions
         item={{ id: item.id, name: item.ingredient.name, quantity: item.quantity, unit: item.unit, expiryDate: item.expiryDate }}
       />

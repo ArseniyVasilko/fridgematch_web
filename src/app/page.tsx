@@ -42,7 +42,7 @@ export default async function HomePage() {
             )}
           </div>
           <MotionDashes className="absolute right-[34%] top-10 hidden h-12 w-12 lg:block" />
-          <FridgeIllustration className="absolute -bottom-2 right-6 hidden h-[115%] max-h-96 lg:block" />
+          <FridgeIllustration className="absolute bottom-0 right-8 hidden h-[94%] max-h-96 lg:block" />
           <VeggiesIllustration className="pointer-events-none absolute -right-4 -top-2 h-28 opacity-90 sm:hidden" />
           <VeggiesIllustration className="absolute bottom-4 right-6 hidden h-40 sm:block lg:hidden" />
         </div>
@@ -122,7 +122,7 @@ export default async function HomePage() {
           {[
             { n: 1, icon: <Refrigerator className="h-8 w-8" aria-hidden />, text: "Add the ingredients you have" },
             { n: 2, icon: <Search className="h-8 w-8" aria-hidden />, text: "Get matching recipes" },
-            { n: 3, icon: <BowlArt className="h-10 w-12" />, text: "Cook and enjoy!" },
+            { n: 3, icon: <BowlArt className="h-14 w-16" />, text: "Cook and enjoy!" },
           ].map((s) => (
             <li key={s.n} className="flex flex-col items-center text-center">
               <span className="relative flex h-16 w-16 items-center justify-center text-brown-dark">
