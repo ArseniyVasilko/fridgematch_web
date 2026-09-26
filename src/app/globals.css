@@ -1,26 +1,75 @@
 @import "tailwindcss";
+@import "@fontsource/chewy/400.css";
+@import "@fontsource/nunito-sans/400.css";
+@import "@fontsource/nunito-sans/600.css";
+@import "@fontsource/nunito-sans/700.css";
+@import "@fontsource/nunito-sans/800.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * FridgeMatch design tokens (design document, section 4.3)
+ *   Background  warm cream   #F8F3EC
+ *   Primary     brown        #8B6A4E  (buttons, icons)
+ *   Accent      caramel      #D9B38C  (chips, highlights, illustrations)
+ * Additions for WCAG 2.1 AA (see README):
+ *   ink / brown-dark  darker browns for body text + headings
+ *   tomato / herb     status colours only (expiring / fresh)
+ */
+@theme {
+  --color-cream: #f8f3ec;
+  --color-sand: #f1e6d8;
+  --color-sand-deep: #e9dac6;
+  --color-card: #fffcf8;
+  --color-line: #e3d3bf;
+  --color-accent: #d9b38c;
+  --color-accent-soft: #efdcc6;
+  --color-brown: #8b6a4e;
+  --color-brown-hover: #74563d;
+  --color-brown-dark: #5b3d28;
+  --color-ink: #3d2a1d;
+  --color-muted: #6f5847;
+  --color-tomato: #b23f2a;
+  --color-tomato-soft: #f8e1da;
+  --color-herb: #4a7336;
+  --color-herb-soft: #e3eed9;
+  --color-amber: #8a5a00;
+  --color-amber-soft: #f8ead0;
+
+  --font-display: "Chewy", "Comic Sans MS", system-ui, cursive;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(91 61 40 / 0.06), 0 4px 14px rgb(91 61 40 / 0.06);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-cream);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--color-brown-dark);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brown);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -1,0 +1,97 @@
+// FridgeMatch database schema (see design document, section 5.3)
+// Dev: SQLite. Production: change provider to "postgresql" and swap the
+// driver adapter in src/lib/db.ts (see README).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            Int                @id @default(autoincrement())
+  email         String             @unique
+  name          String?
+  passwordHash  String
+  createdAt     DateTime           @default(now())
+  pantryItems   PantryItem[]
+  shoppingItems ShoppingListItem[]
+}
+
+/// Canonical ingredient names (synced from TheMealDB's ingredient list plus
+/// anything users type in). `slug` is the normalised, singular, lowercase key
+/// used for matching.
+model Ingredient {
+  id                Int                @id @default(autoincrement())
+  name              String
+  slug              String             @unique
+  pantryItems       PantryItem[]
+  shoppingItems     ShoppingListItem[]
+  recipeIngredients RecipeIngredient[]
+}
+
+model PantryItem {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  ingredientId Int
+  quantity     Float?
+  unit         String?
+  expiryDate   DateTime?
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([userId])
+}
+
+/// Round 2 (should-have): automatic shopping list
+model ShoppingListItem {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  ingredientId Int
+  quantity     Float?
+  unit         String?
+  checked      Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([userId])
+}
+
+/// Recipes synced from TheMealDB (source = "themealdb"). Community recipes
+/// (could-have) will use source = "community".
+model Recipe {
+  id           Int                @id @default(autoincrement())
+  externalId   String?            @unique
+  source       String             @default("themealdb")
+  name         String
+  category     String?
+  area         String?
+  instructions String
+  imageUrl     String?
+  youtubeUrl   String?
+  sourceUrl    String?
+  tags         String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  ingredients  RecipeIngredient[]
+
+  @@index([name])
+}
+
+model RecipeIngredient {
+  id           Int        @id @default(autoincrement())
+  recipeId     Int
+  ingredientId Int
+  measure      String     @default("")
+  position     Int
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([ingredientId])
+  @@index([recipeId])
+}
