@@ -43,7 +43,7 @@ export function MobileMenu({ links, children }: { links: NavLink[]; children?: R
         <nav
           id="mobile-menu"
           aria-label="Main"
-          className="absolute inset-x-0 top-full z-40 border-b border-line bg-cream px-4 pb-4 pt-2 shadow-lg"
+          className="absolute inset-x-0 top-full z-[60] border-b border-line bg-cream px-4 pb-4 pt-2 shadow-lg"
         >
           <ul className="flex flex-col">
             {links.map((l) => (

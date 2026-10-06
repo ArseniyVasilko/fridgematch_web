@@ -32,11 +32,8 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
           <h1 className="text-5xl">About FridgeMatch</h1>
-          <p className="mt-2 text-lg font-semibold text-muted">Good food. Less waste.</p>
-        </div>
-        <VeggiesIllustration className="hidden h-28 sm:block" />
+        <VeggiesIllustration className="hidden h-24 sm:block" />
       </div>
 
       <div className="mt-6 space-y-4 leading-relaxed">

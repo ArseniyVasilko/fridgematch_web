@@ -54,16 +54,43 @@ export function FridgeIllustration({ className = "" }: { className?: string }) {
       <g transform="rotate(6 150 150)">
         <rect x="104" y="112" width="88" height="86" rx="4" fill={C.paper} stroke={C.line} strokeWidth="1.5" />
         <rect x="136" y="104" width="26" height="12" rx="2" fill={C.accent} opacity="0.8" />
-        <text x="148" y="140" textAnchor="middle" fontFamily="Chewy, cursive" fontSize="13" fill={C.dark}>
-          Less
+        <text
+          x="148"
+          y="138"
+          textAnchor="middle"
+          fontFamily="Chewy, cursive"
+          fontSize="10"
+          fill={C.dark}
+        >
+          Your fridge has
         </text>
-        <text x="148" y="156" textAnchor="middle" fontFamily="Chewy, cursive" fontSize="13" fill={C.dark}>
-          food waste.
+
+        <text
+          x="148"
+          y="151"
+          textAnchor="middle"
+          fontFamily="Chewy, cursive"
+          fontSize="10"
+          fill={C.dark}
+        >
+          more potential
         </text>
-        <text x="148" y="172" textAnchor="middle" fontFamily="Chewy, cursive" fontSize="13" fill={C.dark}>
-          More good meals.
+
+        <text
+          x="148"
+          y="164"
+          textAnchor="middle"
+          fontFamily="Chewy, cursive"
+          fontSize="10"
+          fill={C.dark}
+        >
+          than you think.
         </text>
-        <path d="M143 181 c-4-5 3-9 5-4 c2-5 9-1 5 4 l-5 5 z" fill={C.brown} />
+
+        <path
+          d="M143 180 c-4-5 3-9 5-4 c2-5 9-1 5 4 l-5 5 z"
+          fill={C.brown}
+        />
       </g>
       {/* plant */}
       <g transform="translate(206 208)">

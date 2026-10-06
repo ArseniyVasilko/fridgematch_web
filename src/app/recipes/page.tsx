@@ -192,7 +192,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
             <div className="hidden items-center gap-2 md:flex">
               <VeggiesIllustration className="h-24" />
               <p className="max-w-40 -rotate-2 rounded-xl border border-line bg-card px-3 py-2 font-display text-lg leading-tight text-brown-dark shadow-sm">
-                Turn what you have into something great.
+                Your next meal may already be hiding in your fridge.
               </p>
             </div>
           </div>
