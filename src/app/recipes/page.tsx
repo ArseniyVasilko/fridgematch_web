@@ -2,22 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, CircleHelp } from "lucide-react";
+import { ActiveFilters } from "@/components/ActiveFilters";
 import { FilterPanel } from "@/components/FilterPanel";
 import { AutoSubmit } from "@/components/AutoSubmit";
 import { IngredientInput } from "@/components/IngredientInput";
 import { VeggiesIllustration } from "@/components/illustrations";
 import { RecipeCard } from "@/components/RecipeCard";
+import { ToggleChip } from "@/components/ToggleChip";
 import { btn, card, input } from "@/components/ui";
 import type { UserIngredient } from "@/lib/matching";
 import { getPantryForMatching } from "@/lib/pantry";
-import { browseRecipes, getCategories, matchRecipes } from "@/lib/recipes";
-import { first, parseIngredientList, recipesUrl, type SearchParams } from "@/lib/search-params";
+import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
+import { browseRecipes, getCuisines, getRecipeFacets, matchRecipes } from "@/lib/recipes";
+import { first, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Recipes" };
 
 const PAGE = 48;
-const MISSING_OPTIONS = ["any", "0", "1", "2", "3"] as const;
+const MISSING_OPTIONS = ["0", "1", "2", "3", "any"] as const;
+const missingLabel = (m: string) => (m === "any" ? "Any" : m === "0" ? "None" : `Up to ${m}`);
 
 function parseBasics(v: string | string[] | undefined): boolean {
   if (v == null) return true; // default: assume salt, pepper, oil and water
@@ -32,13 +36,28 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const basics = parseBasics(sp.basics);
   const missingParam = MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
-  const category = first(sp.cat) || null;
+  const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
+  const diets = parseList(sp.diet, DIETS.map((d) => d.id));
+  const cuisines = await getCuisines();
+  const cuisine = cuisines.find((c) => c === first(sp.cuisine)) ?? null;
   const sort = first(sp.sort) ?? "best";
   const q = first(sp.q)?.trim() || null;
   const limit = Math.min(Math.max(Number(first(sp.limit)) || PAGE, PAGE), 500);
 
+  // every filter in the URL; also kept when the ingredients change
+  const filterParams = {
+    pantry: usePantry ? "1" : undefined,
+    basics: basics ? undefined : "0",
+    missing: missingParam === "any" ? undefined : missingParam,
+    type: types.join(",") || undefined,
+    diet: diets.join(",") || undefined,
+    cuisine: cuisine ?? undefined,
+  };
+  const urlWith = (changes: Partial<typeof filterParams>) =>
+    recipesUrl({ i: ingredients, q, ...filterParams, ...changes, sort: sort === "best" ? null : sort });
+  const currentUrl = urlWith({});
+
   const userId = await getUserId();
-  const currentUrl = recipesUrl({ i: ingredients, pantry: usePantry, q, cat: category, missing: missingParam === "any" ? null : missingParam, sort: sort === "best" ? null : sort, basics: basics ? null : "0" });
   if (usePantry && !userId) {
     redirect(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
   }
@@ -47,15 +66,17 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const userIngredients: UserIngredient[] = [...ingredients.map((name) => ({ name })), ...pantryItems];
   const matchMode = ingredients.length > 0 || usePantry;
 
-  const categories = await getCategories();
-  const activeFilters =
-    (usePantry ? 1 : 0) + (missingParam !== "any" ? 1 : 0) + (category ? 1 : 0) + (basics ? 0 : 1);
-  const keep = {
-    pantry: usePantry ? "1" : undefined,
-    basics: basics ? undefined : "0",
-    missing: missingParam === "any" ? undefined : missingParam,
-    cat: category ?? undefined,
-  };
+  const without = <T extends string>(list: T[], value: T) => list.filter((v) => v !== value).join(",") || undefined;
+  // pantry matching is a mode switched at the top of the panel, not a filter, so clearing keeps it
+  const activeChips = [
+    ...MEAL_TYPES.filter((t) => types.includes(t.id)).map((t) => ({ label: t.label, href: urlWith({ type: without(types, t.id) }) })),
+    ...DIETS.filter((d) => diets.includes(d.id)).map((d) => ({ label: d.label, href: urlWith({ diet: without(diets, d.id) }) })),
+    ...(cuisine ? [{ label: cuisine, href: urlWith({ cuisine: undefined }) }] : []),
+    // missing / basics only change anything when matching ingredients
+    ...(matchMode && missingParam !== "any" ? [{ label: `Missing: ${missingLabel(missingParam)}`, href: urlWith({ missing: undefined }) }] : []),
+    ...(matchMode && !basics ? [{ label: "Without basics", href: urlWith({ basics: undefined }) }] : []),
+  ];
+  const clearHref = recipesUrl({ i: ingredients, q, pantry: usePantry, sort: sort === "best" ? null : sort });
   // links to details carry the ingredients so the details page can show have / missing
   const detailQuery = new URLSearchParams();
   if (ingredients.length) detailQuery.set("i", ingredients.join(","));
@@ -63,10 +84,19 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   if (!basics) detailQuery.set("basics", "0");
   const detailSuffix = detailQuery.toString() ? `?${detailQuery}` : "";
 
+  const facets = await getRecipeFacets();
+  const filters = { types, diets, cuisine };
   let cards: React.ReactNode[] = [];
   let total = 0;
+  let counts: OptionCounts;
   if (matchMode) {
-    let results = await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing, category });
+    const filtered = applyFilters(
+      await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing }),
+      (m) => facets.get(m.recipe.id)!,
+      filters,
+    );
+    counts = filtered.counts;
+    let results = filtered.items;
     if (sort === "missing") results = [...results].sort((a, b) => a.missingCount - b.missingCount || b.score - a.score);
     if (sort === "name") results = [...results].sort((a, b) => a.recipe.name.localeCompare(b.recipe.name));
     total = results.length;
@@ -74,9 +104,10 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
       <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} />
     ));
   } else {
-    const results = await browseRecipes({ q, category });
-    total = results.length;
-    cards = results.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />);
+    const filtered = applyFilters(await browseRecipes({ q }), (r) => facets.get(r.id)!, filters);
+    counts = filtered.counts;
+    total = filtered.items.length;
+    cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />);
   }
 
   const title = matchMode ? "Recipe results" : q ? `Recipes for “${q}”` : "All recipes";
@@ -93,7 +124,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
         <IngredientInput
           key={ingredients.join(",")}
           initial={ingredients}
-          keep={keep}
+          keep={filterParams}
           variant="compact"
           submitLabel={matchMode ? "Update results" : "Find Recipes"}
         />
@@ -102,8 +133,9 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
       <div className="mt-5 flex flex-col gap-6 lg:flex-row">
         {/* Filters */}
         <aside className="lg:w-64 lg:shrink-0" aria-label="Filter recipes">
-          <FilterPanel activeCount={activeFilters}>
-            <form id="filters" action="/recipes" className="mt-4 space-y-5">
+          <FilterPanel activeCount={activeChips.length}>
+            {/* key: the options are uncontrolled, so rebuild them when a chip link changes the URL */}
+            <form key={currentUrl} id="filters" action="/recipes" className="mt-4 space-y-5">
               {ingredients.length > 0 && <input type="hidden" name="i" value={ingredients.join(",")} />}
               {!matchMode && (
                 <label className="block">
@@ -112,7 +144,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                 </label>
               )}
 
-              <fieldset>
+              <fieldset className="group">
                 <legend className="text-sm font-bold text-brown-dark">Match with pantry</legend>
                 {userId ? (
                   <label className="mt-1 flex items-start justify-between gap-3 text-sm text-muted">
@@ -122,31 +154,27 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                   </label>
                 ) : (
                   <p className="mt-1 text-sm text-muted">
-                    <Link className="font-bold text-brown-dark underline" href={`/login?callbackUrl=${encodeURIComponent(recipesUrl({ ...keep, i: ingredients, pantry: true }))}`}>
+                    <Link className="font-bold text-brown-dark underline" href={`/login?callbackUrl=${encodeURIComponent(urlWith({ pantry: "1" }))}`}>
                       Log in
                     </Link>{" "}
                     to match recipes with your saved pantry.
                   </p>
                 )}
-              </fieldset>
 
-              {matchMode && (
-                <>
+                {/* only used when matching; greyed out (live, via the pantry checkbox) when there is nothing to match */}
+                <div className={`mt-4 space-y-4 ${ingredients.length ? "" : "opacity-50 group-has-[[name=pantry]:checked]:opacity-100"}`}>
                   <fieldset>
                     <legend className="flex items-center gap-1 text-sm font-bold text-brown-dark">
-                      Up to missing ingredients
+                      Missing ingredients
                       <span title="Hide recipes that need more ingredients than this" className="text-muted">
                         <CircleHelp className="h-3.5 w-3.5" aria-hidden />
                       </span>
                     </legend>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {MISSING_OPTIONS.map((m) => (
-                        <label key={m} className="cursor-pointer">
-                          <input type="radio" name="missing" value={m} defaultChecked={missingParam === m} className="peer sr-only" />
-                          <span className="inline-flex min-w-10 items-center justify-center rounded-full border border-line bg-card px-3 py-1 text-sm font-bold text-brown-dark peer-checked:border-brown peer-checked:bg-brown peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-brown">
-                            {m === "any" ? "Any" : m === "3" ? "3" : m}
-                          </span>
-                        </label>
+                        <ToggleChip key={m} type="radio" name="missing" value={m} checked={missingParam === m}>
+                          {missingLabel(m)}
+                        </ToggleChip>
                       ))}
                     </div>
                   </fieldset>
@@ -159,24 +187,54 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                       <span className="block text-muted">Salt, pepper, oil and water</span>
                     </span>
                   </label>
-                </>
-              )}
+                </div>
+                {!ingredients.length && (
+                  <p className="mt-2 text-xs text-muted group-has-[[name=pantry]:checked]:hidden">
+                    Turn on your pantry or add ingredients above to use these.
+                  </p>
+                )}
+              </fieldset>
 
               <fieldset>
                 <legend className="text-sm font-bold text-brown-dark">Meal type</legend>
-                <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-1">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="cat" value="" defaultChecked={!category} className="h-4 w-4 accent-brown" /> All
-                  </label>
-                  {categories.map((c) => (
-                    <label key={c} className="flex items-center gap-2 text-sm">
-                      <input type="radio" name="cat" value={c} defaultChecked={category === c} className="h-4 w-4 accent-brown" /> {c}
-                    </label>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {MEAL_TYPES.map((t) => (
+                    <ToggleChip key={t.id} type="checkbox" name="type" value={t.id} checked={types.includes(t.id)} count={counts.types[t.id]}>
+                      {t.label}
+                    </ToggleChip>
                   ))}
                 </div>
               </fieldset>
 
-              <button className={`${btn.primary} w-full`}>Apply filters</button>
+              <fieldset>
+                <legend className="text-sm font-bold text-brown-dark">Diet</legend>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {DIETS.map((d) => (
+                    <ToggleChip key={d.id} type="checkbox" name="diet" value={d.id} checked={diets.includes(d.id)} count={counts.diets[d.id]}>
+                      {d.label}
+                    </ToggleChip>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted">Worked out from ingredient lists. Always check labels if you have an allergy.</p>
+              </fieldset>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold text-brown-dark">Cuisine</span>
+                <select name="cuisine" defaultValue={cuisine ?? ""} className={input}>
+                  <option value="">Any cuisine</option>
+                  {cuisines.map((c) => (
+                    <option key={c} value={c}>
+                      {c} ({counts.cuisines[c] ?? 0})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="space-y-2">
+                <button className={`${btn.primary} w-full`}>Apply filters</button>
+                {/* a full page load (like "Apply") so options ticked but not yet applied are reset too */}
+                <a href={clearHref} className={`${btn.outline} w-full`}>Clear filters</a>
+              </div>
             </form>
             <AutoSubmit formId="filters" />
           </FilterPanel>
@@ -212,6 +270,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
               </label>
             )}
           </div>
+          <ActiveFilters chips={activeChips} clearHref={clearHref} />
 
           {usePantry && pantryItems.length === 0 && (
             <div className={`${card} mt-4 bg-amber-soft p-4 text-sm`}>
@@ -230,7 +289,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                   ? "Try allowing more missing ingredients, choosing another meal type, or adding a few more ingredients."
                   : "Try another search word or meal type."}
               </p>
-              <Link href="/recipes" className={btn.outline}>Clear filters</Link>
+              <Link href={activeChips.length ? clearHref : "/recipes"} className={btn.outline}>Clear filters</Link>
             </div>
           )}
 

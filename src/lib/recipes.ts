@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "./db";
 import { coreIngredient, slugifyIngredient } from "./ingredients";
 import { rankRecipes, evaluateRecipe, type CatalogueRecipe, type UserIngredient, type MatchOptions } from "./matching";
+import { facetsOf, type RecipeFacets } from "./recipe-filters";
 
 /**
  * The recipe catalogue is small (TheMealDB has a few hundred meals), so it is
@@ -38,16 +39,24 @@ export async function getCatalogue(): Promise<CatalogueRecipe[]> {
   return recipes;
 }
 
-export async function matchRecipes(user: UserIngredient[], options: MatchOptions & { category?: string | null }) {
-  let recipes = await getCatalogue();
-  if (options.category) recipes = recipes.filter((r) => r.category === options.category);
-  return rankRecipes(recipes, user, options);
+let facetCache: { recipes: CatalogueRecipe[]; facets: Map<number, RecipeFacets> } | null = null;
+
+/** Meal type, diets and cuisine per recipe id, worked out once per catalogue load. */
+export async function getRecipeFacets(): Promise<Map<number, RecipeFacets>> {
+  const recipes = await getCatalogue();
+  if (facetCache?.recipes !== recipes) {
+    facetCache = { recipes, facets: new Map(recipes.map((r) => [r.id, facetsOf(r)])) };
+  }
+  return facetCache.facets;
+}
+
+export async function matchRecipes(user: UserIngredient[], options: MatchOptions) {
+  return rankRecipes(await getCatalogue(), user, options);
 }
 
 /** Browse / search by recipe name (UC7). */
-export async function browseRecipes({ q, category }: { q?: string | null; category?: string | null }) {
+export async function browseRecipes({ q }: { q?: string | null }) {
   let recipes = await getCatalogue();
-  if (category) recipes = recipes.filter((r) => r.category === category);
   const term = q?.trim().toLowerCase();
   if (term) {
     const core = coreIngredient(term);
@@ -62,9 +71,9 @@ export async function browseRecipes({ q, category }: { q?: string | null; catego
   return recipes;
 }
 
-export async function getCategories(): Promise<string[]> {
+export async function getCuisines(): Promise<string[]> {
   const recipes = await getCatalogue();
-  return [...new Set(recipes.map((r) => r.category).filter((c): c is string => !!c))].sort();
+  return [...new Set(recipes.map((r) => r.area).filter((a): a is string => !!a))].sort();
 }
 
 /**
