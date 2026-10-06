@@ -178,6 +178,8 @@ export interface RecipeFacets {
   mealType: MealTypeId | null;
   diets: Set<DietId>;
   cuisine: string | null;
+  /** Ingredient slugs, padded with spaces for whole-word matching (" chestnut mushroom "). */
+  ingredients: string[];
 }
 
 export function facetsOf(recipe: CatalogueRecipe): RecipeFacets {
@@ -185,6 +187,7 @@ export function facetsOf(recipe: CatalogueRecipe): RecipeFacets {
     mealType: mealTypeOf(recipe.category),
     diets: dietsOf(recipe.ingredients.map((i) => i.name)),
     cuisine: recipe.area,
+    ingredients: recipe.ingredients.map((i) => ` ${slugifyIngredient(i.name)} `),
   };
 }
 
@@ -192,19 +195,24 @@ export interface RecipeFilters {
   types: MealTypeId[];
   diets: DietId[];
   cuisine: string | null;
+  /** Ingredients to leave out ("mushroom" also leaves out "chestnut mushroom", "nut" not "nutmeg"). */
+  avoid: string[];
 }
 
-/** Meal types: any of them. Diets: all of them. */
+/** Meal types: any of them. Diets: all of them. Avoided ingredients: none of them. */
 export function matchesFilters(f: RecipeFacets, filters: RecipeFilters): boolean {
   return (
     (filters.types.length === 0 || (f.mealType != null && filters.types.includes(f.mealType))) &&
     filters.diets.every((d) => f.diets.has(d)) &&
-    (!filters.cuisine || f.cuisine === filters.cuisine)
+    (!filters.cuisine || f.cuisine === filters.cuisine) &&
+    !filters.avoid.some((a) => f.ingredients.some((i) => i.includes(a)))
   );
 }
 
 /** The items that pass the filters, plus how many each option would show. */
-export function applyFilters<T>(items: T[], getFacets: (item: T) => RecipeFacets, filters: RecipeFilters) {
+export function applyFilters<T>(items: T[], getFacets: (item: T) => RecipeFacets, input: RecipeFilters) {
+  // slugify the avoided names once, padded like the facets so only whole words match
+  const filters = { ...input, avoid: input.avoid.map((a) => ` ${slugifyIngredient(a)} `).filter((a) => a.trim()) };
   const facets = items.map(getFacets);
   return {
     items: items.filter((_, i) => matchesFilters(facets[i], filters)),

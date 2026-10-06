@@ -72,16 +72,16 @@ describe("mealTypeOf", () => {
 });
 
 describe("applyFilters", () => {
-  const facet = (mealType: RecipeFacets["mealType"], diets: string[], cuisine: string | null) =>
-    ({ mealType, diets: new Set(diets), cuisine }) as RecipeFacets;
+  const facet = (mealType: RecipeFacets["mealType"], diets: string[], cuisine: string | null, ingredients: string[] = []) =>
+    ({ mealType, diets: new Set(diets), cuisine, ingredients: ingredients.map((i) => ` ${i} `) }) as RecipeFacets;
   const recipes = [
-    facet("main", ["vegetarian", "vegan"], "Thai"),
-    facet("main", ["vegetarian"], "Italian"),
+    facet("main", ["vegetarian", "vegan"], "Thai", ["chestnut mushroom", "rice"]),
+    facet("main", ["vegetarian"], "Italian", ["nutmeg", "cheese"]),
     facet("dessert", ["vegetarian", "vegan"], "Italian"),
     facet("side", [], "Thai"),
   ];
   const run = (filters: Partial<Parameters<typeof applyFilters>[2]>) =>
-    applyFilters(recipes, (f) => f, { types: [], diets: [], cuisine: null, ...filters });
+    applyFilters(recipes, (f) => f, { types: [], diets: [], cuisine: null, avoid: [], ...filters });
 
   it("shows recipes of any chosen meal type", () => {
     expect(run({ types: ["main", "dessert"] }).items).toHaveLength(3);
@@ -93,6 +93,12 @@ describe("applyFilters", () => {
 
   it("combines groups", () => {
     expect(run({ types: ["main"], diets: ["vegan"], cuisine: "Thai" }).items).toEqual([recipes[0]]);
+  });
+
+  it("leaves out recipes with an avoided ingredient, matching whole words", () => {
+    // "Mushrooms" is slugified to "mushroom" and catches "chestnut mushroom"; "nut" does not catch "nutmeg"
+    expect(run({ avoid: ["Mushrooms"] }).items).not.toContain(recipes[0]);
+    expect(run({ avoid: ["nut"] }).items).toHaveLength(4);
   });
 
   it("counts meal types and cuisines as if that group were unset, diets on top", () => {

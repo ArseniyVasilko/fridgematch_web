@@ -12,6 +12,7 @@ import { ToggleChip } from "@/components/ToggleChip";
 import { btn, card, input } from "@/components/ui";
 import type { UserIngredient } from "@/lib/matching";
 import { getPantryForMatching } from "@/lib/pantry";
+import { getProfile } from "@/lib/profile";
 import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
 import { browseRecipes, getCuisines, getRecipeFacets, matchRecipes } from "@/lib/recipes";
 import { first, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
@@ -22,9 +23,11 @@ export const metadata: Metadata = { title: "Recipes" };
 const PAGE = 48;
 const MISSING_OPTIONS = ["0", "1", "2", "3", "any"] as const;
 const missingLabel = (m: string) => (m === "any" ? "Any" : m === "0" ? "None" : `Up to ${m}`);
+/** URL value for "turned off for this search" when the profile has saved values. */
+const NONE = "none";
 
-function parseBasics(v: string | string[] | undefined): boolean {
-  if (v == null) return true; // default: assume salt, pepper, oil and water
+function parseBasics(v: string | string[] | undefined, fallback: boolean): boolean {
+  if (v == null) return fallback; // default: the profile's choice, or assume salt, pepper, oil and water
   const values = Array.isArray(v) ? v : [v];
   return values.includes("1");
 }
@@ -33,31 +36,41 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const sp = (await searchParams) as SearchParams;
   const ingredients = parseIngredientList(sp.i);
   const usePantry = first(sp.pantry) === "1";
-  const basics = parseBasics(sp.basics);
+  const userId = await getUserId();
+  // a logged-in user's saved restrictions apply whenever the URL doesn't set that filter
+  const profile = userId ? await getProfile(userId) : null;
+  const saved = { diets: profile?.diets ?? [], avoid: profile?.avoid ?? [], basics: profile?.assumeBasics ?? true };
+  const basics = parseBasics(sp.basics, saved.basics);
   const missingParam = MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
   const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
-  const diets = parseList(sp.diet, DIETS.map((d) => d.id));
+  const diets = sp.diet == null ? saved.diets : parseList(sp.diet, DIETS.map((d) => d.id));
+  const avoid = sp.avoid == null ? saved.avoid : parseIngredientList(sp.avoid).filter((a) => a !== NONE);
+  const avoidOptions = parseIngredientList([...saved.avoid, ...avoid]); // saved ones stay listed when unticked
   const cuisines = await getCuisines();
   const cuisine = cuisines.find((c) => c === first(sp.cuisine)) ?? null;
   const sort = first(sp.sort) ?? "best";
   const q = first(sp.q)?.trim() || null;
   const limit = Math.min(Math.max(Number(first(sp.limit)) || PAGE, PAGE), 500);
 
+  // left out of the URL when it matches the saved profile; an empty list the profile would fill is NONE
+  const listParam = (list: string[], savedList: string[]) => list.join(",") || (savedList.length ? NONE : undefined);
+  const basicsParam = (on: boolean) => (on === saved.basics ? undefined : on ? "1" : "0");
+
   // every filter in the URL; also kept when the ingredients change
   const filterParams = {
     pantry: usePantry ? "1" : undefined,
-    basics: basics ? undefined : "0",
+    basics: basicsParam(basics),
     missing: missingParam === "any" ? undefined : missingParam,
     type: types.join(",") || undefined,
-    diet: diets.join(",") || undefined,
+    diet: listParam(diets, saved.diets),
+    avoid: listParam(avoid, saved.avoid),
     cuisine: cuisine ?? undefined,
   };
   const urlWith = (changes: Partial<typeof filterParams>) =>
     recipesUrl({ i: ingredients, q, ...filterParams, ...changes, sort: sort === "best" ? null : sort });
   const currentUrl = urlWith({});
 
-  const userId = await getUserId();
   if (usePantry && !userId) {
     redirect(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
   }
@@ -66,17 +79,28 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const userIngredients: UserIngredient[] = [...ingredients.map((name) => ({ name })), ...pantryItems];
   const matchMode = ingredients.length > 0 || usePantry;
 
-  const without = <T extends string>(list: T[], value: T) => list.filter((v) => v !== value).join(",") || undefined;
+  const without = <T extends string>(list: T[], value: T, savedList: string[] = []) =>
+    listParam(list.filter((v) => v !== value), savedList);
   // pantry matching is a mode switched at the top of the panel, not a filter, so clearing keeps it
   const activeChips = [
     ...MEAL_TYPES.filter((t) => types.includes(t.id)).map((t) => ({ label: t.label, href: urlWith({ type: without(types, t.id) }) })),
-    ...DIETS.filter((d) => diets.includes(d.id)).map((d) => ({ label: d.label, href: urlWith({ diet: without(diets, d.id) }) })),
+    ...DIETS.filter((d) => diets.includes(d.id)).map((d) => ({ label: d.label, href: urlWith({ diet: without(diets, d.id, saved.diets) }) })),
+    ...avoid.map((a) => ({ label: `Avoid: ${a}`, href: urlWith({ avoid: without(avoid, a, saved.avoid) }) })),
     ...(cuisine ? [{ label: cuisine, href: urlWith({ cuisine: undefined }) }] : []),
     // missing / basics only change anything when matching ingredients
     ...(matchMode && missingParam !== "any" ? [{ label: `Missing: ${missingLabel(missingParam)}`, href: urlWith({ missing: undefined }) }] : []),
-    ...(matchMode && !basics ? [{ label: "Without basics", href: urlWith({ basics: undefined }) }] : []),
+    ...(matchMode && !basics ? [{ label: "Without basics", href: urlWith({ basics: basicsParam(true) }) }] : []),
   ];
-  const clearHref = recipesUrl({ i: ingredients, q, pantry: usePantry, sort: sort === "best" ? null : sort });
+  // clearing also turns off the saved profile for this search; opening /recipes again brings it back
+  const clearHref = recipesUrl({
+    i: ingredients,
+    q,
+    pantry: usePantry,
+    basics: basicsParam(true),
+    diet: listParam([], saved.diets),
+    avoid: listParam([], saved.avoid),
+    sort: sort === "best" ? null : sort,
+  });
   // links to details carry the ingredients so the details page can show have / missing
   const detailQuery = new URLSearchParams();
   if (ingredients.length) detailQuery.set("i", ingredients.join(","));
@@ -85,7 +109,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const detailSuffix = detailQuery.toString() ? `?${detailQuery}` : "";
 
   const facets = await getRecipeFacets();
-  const filters = { types, diets, cuisine };
+  const filters = { types, diets, cuisine, avoid };
   let cards: React.ReactNode[] = [];
   let total = 0;
   let counts: OptionCounts;
@@ -208,6 +232,9 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
               <fieldset>
                 <legend className="text-sm font-bold text-brown-dark">Diet</legend>
+                {/* sent with every apply so unticking all saved options keeps them off instead of restoring the profile */}
+                {saved.diets.length > 0 && <input type="hidden" name="diet" value={NONE} />}
+                {saved.avoid.length > 0 && <input type="hidden" name="avoid" value={NONE} />}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {DIETS.map((d) => (
                     <ToggleChip key={d.id} type="checkbox" name="diet" value={d.id} checked={diets.includes(d.id)} count={counts.diets[d.id]}>
@@ -215,7 +242,25 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                     </ToggleChip>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-muted">Worked out from ingredient lists. Always check labels if you have an allergy.</p>
+                <p className="mt-2 text-xs text-muted">Always check labels if you have an allergy.</p>
+                {avoidOptions.length > 0 && (
+                  <>
+                    <p className="mt-3 text-xs font-bold text-brown-dark">Avoid</p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {avoidOptions.map((a) => (
+                        <ToggleChip key={a} type="checkbox" name="avoid" value={a} checked={avoid.includes(a)}>
+                          {a}
+                        </ToggleChip>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {userId && (
+                  <p className="mt-1 text-xs text-muted">
+                    Your saved restrictions are ticked by default.{" "}
+                    <Link href="/profile" className="font-bold text-brown-dark underline">Edit them in your profile</Link>
+                  </p>
+                )}
               </fieldset>
 
               <label className="block">

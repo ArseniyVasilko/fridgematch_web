@@ -16,6 +16,12 @@ model User {
   email         String             @unique
   name          String?
   passwordHash  String
+  /// Dietary profile, applied to recipe searches by default. Comma lists in
+  /// the same format as the /recipes URL: diet ids ("vegan,gluten-free") and
+  /// ingredient slugs to avoid ("mushroom,coriander").
+  diets         String             @default("")
+  avoid         String             @default("")
+  assumeBasics  Boolean            @default(true)
   createdAt     DateTime           @default(now())
   pantryItems   PantryItem[]
   shoppingItems ShoppingListItem[]
