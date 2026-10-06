@@ -22,6 +22,12 @@ export function parseIngredientList(v: string | string[] | undefined): string[] 
   return out;
 }
 
+/** "main,side" or ["main", "side"] -> the allowed values among them, deduplicated. */
+export function parseList<T extends string>(v: string | string[] | undefined, allowed: readonly T[]): T[] {
+  const values = (Array.isArray(v) ? v : [v ?? ""]).flatMap((s) => s.split(","));
+  return allowed.filter((a) => values.includes(a));
+}
+
 export function recipesUrl(params: Record<string, string | number | boolean | null | undefined | string[]>) {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
