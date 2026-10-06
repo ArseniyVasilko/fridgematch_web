@@ -107,7 +107,7 @@ export default async function HomePage() {
             <div className="flex-1">
               <h2 className="font-sans text-lg font-extrabold text-ink">Save your ingredients</h2>
               <p className="text-sm text-muted">
-                Create a free account to keep track of your pantry and to save recepies.
+                Create a free account to keep track of your pantry and save recipes.
               </p>
             </div>
             <Link href="/register" className={btn.primary}>Sign up</Link>
