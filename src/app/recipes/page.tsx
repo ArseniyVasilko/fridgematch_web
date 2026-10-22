@@ -36,12 +36,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const sp = (await searchParams) as SearchParams;
   const ingredients = parseIngredientList(sp.i);
   const usePantry = first(sp.pantry) === "1";
+  const matchMode = ingredients.length > 0 || usePantry;
   const userId = await getUserId();
   // a logged-in user's saved restrictions apply whenever the URL doesn't set that filter
   const profile = userId ? await getProfile(userId) : null;
   const saved = { diets: profile?.diets ?? [], avoid: profile?.avoid ?? [], basics: profile?.assumeBasics ?? true };
-  const basics = parseBasics(sp.basics, saved.basics);
-  const missingParam = MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
+  // missing / basics are only read when matching, so a choice made with nothing to match isn't kept for later
+  const basics = matchMode ? parseBasics(sp.basics, saved.basics) : saved.basics;
+  const missingParam = matchMode && MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
   const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
   const diets = sp.diet == null ? saved.diets : parseList(sp.diet, DIETS.map((d) => d.id));
@@ -77,7 +79,6 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
   const pantryItems: UserIngredient[] = usePantry && userId ? await getPantryForMatching(userId) : [];
   const userIngredients: UserIngredient[] = [...ingredients.map((name) => ({ name })), ...pantryItems];
-  const matchMode = ingredients.length > 0 || usePantry;
 
   const without = <T extends string>(list: T[], value: T, savedList: string[] = []) =>
     listParam(list.filter((v) => v !== value), savedList);
@@ -116,7 +117,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   if (matchMode) {
     const filtered = applyFilters(
       await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing }),
-      (m) => facets.get(m.recipe.id)!,
+      (m) => facets.get(m.recipe.id),
       filters,
     );
     counts = filtered.counts;
@@ -128,7 +129,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
       <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} />
     ));
   } else {
-    const filtered = applyFilters(await browseRecipes({ q }), (r) => facets.get(r.id)!, filters);
+    const filtered = applyFilters(await browseRecipes({ q }), (r) => facets.get(r.id), filters);
     counts = filtered.counts;
     total = filtered.items.length;
     cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />);
@@ -232,7 +233,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
               <fieldset>
                 <legend className="text-sm font-bold text-brown-dark">Diet</legend>
-                {/* sent with every apply so unticking all saved options keeps them off instead of restoring the profile */}
+                {/* sent with every update so unticking all saved options keeps them off instead of restoring the profile */}
                 {saved.diets.length > 0 && <input type="hidden" name="diet" value={NONE} />}
                 {saved.avoid.length > 0 && <input type="hidden" name="avoid" value={NONE} />}
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -275,11 +276,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                 </select>
               </label>
 
-              <div className="space-y-2">
-                <button className={`${btn.primary} w-full`}>Apply filters</button>
-                {/* a full page load (like "Apply") so options ticked but not yet applied are reset too */}
-                <a href={clearHref} className={`${btn.outline} w-full`}>Clear filters</a>
-              </div>
+              {/* a full page load so a typed search that wasn't submitted yet is reset too */}
+              <a href={clearHref} className={`${btn.outline} w-full`}>Clear filters</a>
             </form>
             <AutoSubmit formId="filters" />
           </FilterPanel>

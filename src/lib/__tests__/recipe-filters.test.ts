@@ -101,6 +101,14 @@ describe("applyFilters", () => {
     expect(run({ avoid: ["nut"] }).items).toHaveLength(4);
   });
 
+  it("leaves out a recipe that has no facets instead of crashing", () => {
+    const { items, counts } = applyFilters([recipes[0], null], (f) => f ?? undefined, {
+      types: [], diets: [], cuisine: null, avoid: [],
+    });
+    expect(items).toEqual([recipes[0]]);
+    expect(counts.cuisines).toEqual({ Thai: 1 });
+  });
+
   it("counts meal types and cuisines as if that group were unset, diets on top", () => {
     const { counts } = run({ types: ["main"], diets: ["vegetarian"] });
     // meal type counts ignore the chosen type but keep the diet

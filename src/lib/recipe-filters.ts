@@ -21,10 +21,10 @@ export const DIETS = [
   { id: "vegetarian", label: "Vegetarian" },
   { id: "vegan", label: "Vegan" },
   { id: "pescatarian", label: "Pescatarian" },
-  { id: "gluten-free", label: "Gluten free" },
-  { id: "dairy-free", label: "Dairy free" },
-  { id: "egg-free", label: "Egg free" },
-  { id: "nut-free", label: "Nut free" },
+  { id: "gluten-free", label: "No gluten listed" },
+  { id: "dairy-free", label: "No dairy listed" },
+  { id: "egg-free", label: "No eggs listed" },
+  { id: "nut-free", label: "No nuts listed" },
 ] as const;
 export type DietId = (typeof DIETS)[number]["id"];
 
@@ -210,13 +210,17 @@ export function matchesFilters(f: RecipeFacets, filters: RecipeFilters): boolean
 }
 
 /** The items that pass the filters, plus how many each option would show. */
-export function applyFilters<T>(items: T[], getFacets: (item: T) => RecipeFacets, input: RecipeFilters) {
+export function applyFilters<T>(items: T[], getFacets: (item: T) => RecipeFacets | undefined, input: RecipeFilters) {
   // slugify the avoided names once, padded like the facets so only whole words match
   const filters = { ...input, avoid: input.avoid.map((a) => ` ${slugifyIngredient(a)} `).filter((a) => a.trim()) };
-  const facets = items.map(getFacets);
+  // a recipe has no facets if the catalogue reloaded mid-request; leave it out until the next load
+  const known = items.flatMap((item) => {
+    const facets = getFacets(item);
+    return facets ? [{ item, facets }] : [];
+  });
   return {
-    items: items.filter((_, i) => matchesFilters(facets[i], filters)),
-    counts: countOptions(facets, filters),
+    items: known.filter((k) => matchesFilters(k.facets, filters)).map((k) => k.item),
+    counts: countOptions(known.map((k) => k.facets), filters),
   };
 }
 

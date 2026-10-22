@@ -59,7 +59,7 @@ export default async function ProfilePage() {
         <DietaryForm diets={profile.diets} assumeBasics={profile.assumeBasics} />
 
         <div className="mt-5 border-t border-line pt-4">
-          <p className="text-sm font-bold text-brown-dark">Ingredients to avoid</p>
+          <h3 className="font-sans text-base font-extrabold text-ink">Ingredients to avoid</h3>
           {profile.avoid.length > 0 ? (
             <ul className="mt-2 flex flex-wrap gap-2">
               {profile.avoid.map((a) => (
