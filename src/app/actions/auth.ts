@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/db";
+import { emailSchema, nameSchema, passwordSchema } from "@/lib/profile";
 import { safeReturnTo } from "@/lib/session";
 
 export interface AuthFormState {
@@ -30,11 +31,7 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
   }
 }
 
-const registerSchema = z.object({
-  name: z.string().trim().max(60).optional(),
-  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters.").max(200),
-});
+const registerSchema = z.object({ name: nameSchema, email: emailSchema, password: passwordSchema });
 
 export async function registerAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const raw = {
