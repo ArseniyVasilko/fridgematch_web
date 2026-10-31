@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { parseDateInput } from "@/lib/expiry";
 import { ensureIngredients } from "@/lib/import-meals";
@@ -18,12 +19,12 @@ export interface PantryFormState {
 }
 
 const itemSchema = z.object({
-  name: z.string().trim().min(1, "Enter an ingredient.").max(60, "That name is too long."),
+  name: z.string().trim().min(1, "Enter an ingredient.").max(LIMITS.ingredientNameLength, "That name is too long."),
   quantity: z
     .string()
     .trim()
     .transform((v) => (v === "" ? null : Number(v.replace(",", "."))))
-    .refine((v) => v === null || (Number.isFinite(v) && v > 0 && v <= 100000), "Quantity must be a positive number."),
+    .refine((v) => v === null || (Number.isFinite(v) && v > 0 && v <= LIMITS.pantryQuantityMax), "Quantity must be a positive number."),
   unit: z.enum(["", ...PANTRY_UNITS]),
   expiry: z
     .string()

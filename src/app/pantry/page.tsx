@@ -5,7 +5,8 @@ import { clearExpiredItems } from "@/app/actions/pantry";
 import { JarIcon } from "@/components/illustrations";
 import { AddPantryItemForm, PantryItemActions } from "@/components/PantryForms";
 import { btn, card } from "@/components/ui";
-import { expiryLabel, expiryStatus, EXPIRING_SOON_DAYS, type ExpiryStatus } from "@/lib/expiry";
+import { DURATIONS } from "@/lib/constants";
+import { expiryLabel, expiryStatus, type ExpiryStatus } from "@/lib/expiry";
 import { getPantry, type PantryItemWithName } from "@/lib/pantry";
 import { recipesUrl } from "@/lib/search-params";
 import { requireUserId } from "@/lib/session";
@@ -86,7 +87,7 @@ export default async function PantryPage() {
         <div>
           <h1 className="text-5xl">My Pantry</h1>
           <p className="mt-1 font-semibold text-muted">
-            What you have at home. Items expiring within {EXPIRING_SOON_DAYS} days are highlighted.
+            What you have at home. Items expiring within {DURATIONS.expiringSoonDays} days are highlighted.
           </p>
         </div>
         {items.length > 0 && (

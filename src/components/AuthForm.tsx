@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import type { AuthFormState } from "@/app/actions/auth";
+import { LIMITS } from "@/lib/constants";
 import { btn, input, label } from "./ui";
 
 type Action = (prev: AuthFormState, formData: FormData) => Promise<AuthFormState>;
@@ -66,14 +67,14 @@ export function AuthForm({ mode, action, callbackUrl }: { mode: "login" | "regis
           type="password"
           autoComplete={isRegister ? "new-password" : "current-password"}
           required
-          minLength={isRegister ? 8 : undefined}
+          minLength={isRegister ? LIMITS.passwordMinLength : undefined}
           aria-invalid={!!state.fieldErrors?.password}
           aria-describedby={isRegister ? "password-hint" : undefined}
           className={input}
         />
         {isRegister && (
           <p id="password-hint" className={`mt-1 text-sm ${state.fieldErrors?.password ? "font-semibold text-tomato" : "text-muted"}`}>
-            {state.fieldErrors?.password ?? "At least 8 characters."}
+            {state.fieldErrors?.password ?? `At least ${LIMITS.passwordMinLength} characters.`}
           </p>
         )}
       </div>

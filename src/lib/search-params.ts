@@ -1,23 +1,25 @@
 /** Helpers for the recipe results URL (/recipes?i=egg,rice&pantry=1&missing=2 ...). */
 
+import { LIMITS } from "./constants";
+
 export type SearchParams = Record<string, string | string[] | undefined>;
 
 export function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
-/** "egg, rice,onion" -> ["egg", "rice", "onion"] (deduplicated, max 30). */
+/** "egg, rice,onion" -> ["egg", "rice", "onion"] (deduplicated, max LIMITS.ingredientsPerList). */
 export function parseIngredientList(v: string | string[] | undefined): string[] {
   const raw = Array.isArray(v) ? v.join(",") : (v ?? "");
   const seen = new Set<string>();
   const out: string[] = [];
   for (const part of raw.split(",")) {
-    const name = part.trim().replace(/\s+/g, " ").slice(0, 60);
+    const name = part.trim().replace(/\s+/g, " ").slice(0, LIMITS.ingredientNameLength);
     const key = name.toLowerCase();
     if (!name || seen.has(key)) continue;
     seen.add(key);
     out.push(name);
-    if (out.length >= 30) break;
+    if (out.length >= LIMITS.ingredientsPerList) break;
   }
   return out;
 }

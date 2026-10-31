@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { LIMITS } from "@/lib/constants";
 import { useIngredientSuggestions } from "./useIngredientSuggestions";
 import { input } from "./ui";
 
@@ -20,7 +21,7 @@ export function IngredientField({ id, defaultValue = "", required = true }: { id
         name="name"
         value={value}
         required={required}
-        maxLength={60}
+        maxLength={LIMITS.ingredientNameLength}
         autoComplete="off"
         placeholder="e.g. spinach"
         className={input}

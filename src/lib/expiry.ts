@@ -1,9 +1,8 @@
 /** Expiry helpers for My Pantry (design document UC3). */
 
-export type ExpiryStatus = "expired" | "today" | "soon" | "fresh" | "none";
+import { DURATIONS } from "./constants";
 
-/** Items expiring within this many days are highlighted. */
-export const EXPIRING_SOON_DAYS = 3;
+export type ExpiryStatus = "expired" | "today" | "soon" | "fresh" | "none";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,7 +20,7 @@ export function expiryStatus(expiry: Date | null | undefined, now: Date = new Da
   const d = daysUntil(expiry, now);
   if (d < 0) return "expired";
   if (d === 0) return "today";
-  if (d <= EXPIRING_SOON_DAYS) return "soon";
+  if (d <= DURATIONS.expiringSoonDays) return "soon";
   return "fresh";
 }
 

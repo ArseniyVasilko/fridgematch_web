@@ -5,6 +5,7 @@ import { FridgeIllustration, JarIcon, MotionDashes, VeggiesIllustration, BowlArt
 import { RecipeCard } from "@/components/RecipeCard";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { btn, card } from "@/components/ui";
+import { LIMITS } from "@/lib/constants";
 import { getFeaturedRecipes } from "@/lib/recipes";
 import { getUserId } from "@/lib/session";
 import { prisma } from "@/lib/db";
@@ -19,7 +20,7 @@ const FEATURES = [
 ];
 
 export default async function HomePage() {
-  const [featured, userId] = await Promise.all([getFeaturedRecipes(4), getUserId()]);
+  const [featured, userId] = await Promise.all([getFeaturedRecipes(LIMITS.featuredRecipes), getUserId()]);
   const pantryCount = userId ? await prisma.pantryItem.count({ where: { userId } }) : 0;
 
   return (

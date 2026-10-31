@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signIn, signOut } from "@/auth";
+import { LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { safeReturnTo } from "@/lib/session";
 
@@ -31,9 +32,12 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
 }
 
 const registerSchema = z.object({
-  name: z.string().trim().max(60).optional(),
+  name: z.string().trim().max(LIMITS.userNameLength).optional(),
   email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters.").max(200),
+  password: z
+    .string()
+    .min(LIMITS.passwordMinLength, `Use at least ${LIMITS.passwordMinLength} characters.`)
+    .max(LIMITS.passwordMaxLength),
 });
 
 export async function registerAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {

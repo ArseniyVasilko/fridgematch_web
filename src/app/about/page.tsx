@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { card } from "@/components/ui";
 import { VeggiesIllustration } from "@/components/illustrations";
+import { DURATIONS } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "About / Help" };
 
@@ -20,7 +21,7 @@ const FAQ = [
   },
   {
     q: "How do expiry reminders work?",
-    a: "Add an expiry date to items in My Pantry. Items expiring within 3 days are highlighted at the top, with a shortcut to recipes that use them. Expired items are not used for matching.",
+    a: `Add an expiry date to items in My Pantry. Items expiring within ${DURATIONS.expiringSoonDays} days are highlighted at the top, with a shortcut to recipes that use them. Expired items are not used for matching.`,
   },
   {
     q: "Why don't recipes show cooking time or servings?",

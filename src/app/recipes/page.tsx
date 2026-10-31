@@ -10,6 +10,7 @@ import { VeggiesIllustration } from "@/components/illustrations";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ToggleChip } from "@/components/ToggleChip";
 import { btn, card, input } from "@/components/ui";
+import { LIMITS } from "@/lib/constants";
 import type { UserIngredient } from "@/lib/matching";
 import { getPantryForMatching } from "@/lib/pantry";
 import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
@@ -19,7 +20,7 @@ import { getUserId } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Recipes" };
 
-const PAGE = 48;
+const PAGE = LIMITS.recipesPerPage;
 const MISSING_OPTIONS = ["0", "1", "2", "3", "any"] as const;
 const missingLabel = (m: string) => (m === "any" ? "Any" : m === "0" ? "None" : `Up to ${m}`);
 
@@ -42,7 +43,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const cuisine = cuisines.find((c) => c === first(sp.cuisine)) ?? null;
   const sort = first(sp.sort) ?? "best";
   const q = first(sp.q)?.trim() || null;
-  const limit = Math.min(Math.max(Number(first(sp.limit)) || PAGE, PAGE), 500);
+  const limit = Math.min(Math.max(Number(first(sp.limit)) || PAGE, PAGE), LIMITS.recipesPerPageMax);
 
   // every filter in the URL; also kept when the ingredients change
   const filterParams = {

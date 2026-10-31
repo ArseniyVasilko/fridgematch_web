@@ -1,4 +1,5 @@
 import "server-only";
+import { DURATIONS, LIMITS } from "./constants";
 import { prisma } from "./db";
 import { coreIngredient, slugifyIngredient } from "./ingredients";
 import { rankRecipes, evaluateRecipe, type CatalogueRecipe, type UserIngredient, type MatchOptions } from "./matching";
@@ -6,13 +7,13 @@ import { facetsOf, type RecipeFacets } from "./recipe-filters";
 
 /**
  * The recipe catalogue is small (TheMealDB has a few hundred meals), so it is
- * loaded once into memory and matched in JavaScript. Cached for 5 minutes.
+ * loaded once into memory and matched in JavaScript, and reloaded after
+ * DURATIONS.recipeCatalogueCacheMs.
  */
-const CACHE_MS = 5 * 60 * 1000;
 let cache: { at: number; recipes: CatalogueRecipe[] } | null = null;
 
 export async function getCatalogue(): Promise<CatalogueRecipe[]> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.recipes;
+  if (cache && Date.now() - cache.at < DURATIONS.recipeCatalogueCacheMs) return cache.recipes;
   const rows = await prisma.recipe.findMany({
     orderBy: { name: "asc" },
     select: {
@@ -80,7 +81,7 @@ export async function getCuisines(): Promise<string[]> {
  * "Popular recipes" on the home page. We have no usage data yet, so this is
  * a daily-rotating pick that prefers recipes with photos.
  */
-export async function getFeaturedRecipes(count = 4): Promise<CatalogueRecipe[]> {
+export async function getFeaturedRecipes(count: number = LIMITS.featuredRecipes): Promise<CatalogueRecipe[]> {
   const recipes = await getCatalogue();
   if (recipes.length <= count) return recipes;
   const withImages = recipes.filter((r) => r.imageUrl);
@@ -123,7 +124,7 @@ export function evaluateForDetails(
 }
 
 /** Autocomplete for the ingredient input. Prefix matches first. */
-export async function suggestIngredients(q: string, limit = 8): Promise<string[]> {
+export async function suggestIngredients(q: string, limit: number = LIMITS.ingredientSuggestions): Promise<string[]> {
   const term = q.trim();
   if (term.length < 1) return [];
   // search the lowercase slug so it is case-insensitive on SQLite and Postgres
@@ -132,7 +133,7 @@ export async function suggestIngredients(q: string, limit = 8): Promise<string[]
   const rows = await prisma.ingredient.findMany({
     where: { slug: { contains: slugTerm } },
     select: { name: true },
-    take: 200,
+    take: LIMITS.ingredientSuggestionPool,
   });
   const lower = term.toLowerCase();
   return rows

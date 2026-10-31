@@ -7,6 +7,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { DURATIONS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 
 /** Used to keep timing the same when an email is not registered. */
@@ -18,7 +19,7 @@ const credentialsSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  session: { strategy: "jwt", maxAge: DURATIONS.sessionMaxAgeSeconds },
   pages: { signIn: "/login" },
   providers: [
     Credentials({

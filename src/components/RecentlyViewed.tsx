@@ -3,10 +3,10 @@
 import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { LIMITS } from "@/lib/constants";
 import { RecipeCard, type RecipeCardData } from "./RecipeCard";
 
 const KEY = "fm:recently-viewed";
-const MAX = 8;
 
 /** Recently viewed recipes are kept only in this browser (no account needed). */
 function read(): RecipeCardData[] {
@@ -37,7 +37,7 @@ export function TrackRecentlyViewed({ recipe }: { recipe: RecipeCardData }) {
     try {
       const list = read().filter((r) => r.id !== recipe.id);
       list.unshift(recipe);
-      localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)));
+      localStorage.setItem(KEY, JSON.stringify(list.slice(0, LIMITS.recentlyViewedStored)));
     } catch {
       /* storage unavailable (private mode) – not important */
     }
@@ -49,7 +49,7 @@ export function RecentlyViewed() {
   const raw = useSyncExternalStore(subscribe, getSnapshot, () => "[]");
   let recipes: RecipeCardData[] = [];
   try {
-    recipes = (JSON.parse(raw) as RecipeCardData[]).slice(0, 4);
+    recipes = (JSON.parse(raw) as RecipeCardData[]).slice(0, LIMITS.recentlyViewedShown);
   } catch {
     recipes = [];
   }
