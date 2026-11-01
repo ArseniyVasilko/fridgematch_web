@@ -6,6 +6,7 @@ import { z } from "zod";
 import { signIn, signOut } from "@/auth";
 import { LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
+import { emailSchema, nameSchema, passwordSchema } from "@/lib/profile";
 import { safeReturnTo } from "@/lib/session";
 
 export interface AuthFormState {
@@ -31,14 +32,7 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
   }
 }
 
-const registerSchema = z.object({
-  name: z.string().trim().max(LIMITS.userNameLength).optional(),
-  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
-  password: z
-    .string()
-    .min(LIMITS.passwordMinLength, `Use at least ${LIMITS.passwordMinLength} characters.`)
-    .max(LIMITS.passwordMaxLength),
-});
+const registerSchema = z.object({ name: nameSchema, email: emailSchema, password: passwordSchema });
 
 export async function registerAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const raw = {

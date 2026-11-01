@@ -54,13 +54,14 @@ export async function Header() {
         <div className="ml-auto hidden items-center md:flex">
           {user ? (
             <div className="flex items-center gap-1 border-l border-line pl-2">
-              <span
-                className="flex items-center gap-2 px-1 text-xs font-bold text-brown-dark"
-                title={user.email ?? ""}
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-bold text-brown-dark hover:bg-sand"
+                title={`My profile (${user.email ?? ""})`}
               >
                 <UserRound className="h-5 w-5" aria-hidden />
                 <span className="max-w-24 truncate">{displayName}</span>
-              </span>
+              </Link>
 
               <form action={logoutAction}>
                 <button className={`${btn.ghost} text-xs`} aria-label="Log out">
@@ -79,10 +80,15 @@ export async function Header() {
         <div className="ml-auto flex items-center gap-1 md:hidden">
           <MobileMenu links={NAV}>
             {user ? (
-              <form action={logoutAction} className="flex items-center justify-between px-3">
-                <span className="text-sm font-semibold text-muted">Signed in as {displayName}</span>
-                <button className={btn.outline}>Log out</button>
-              </form>
+              <>
+                <Link href="/profile" className="block rounded-xl px-3 py-3 text-lg font-bold text-brown-dark hover:bg-sand">
+                  My Profile
+                </Link>
+                <form action={logoutAction} className="flex items-center justify-between px-3">
+                  <span className="text-sm font-semibold text-muted">Signed in as {displayName}</span>
+                  <button className={btn.outline}>Log out</button>
+                </form>
+              </>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Link href="/login" className={btn.primary}>Log in</Link>

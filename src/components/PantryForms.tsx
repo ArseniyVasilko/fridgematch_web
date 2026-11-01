@@ -9,13 +9,33 @@ import { PANTRY_UNITS } from "@/lib/measure";
 import { IngredientField } from "./IngredientField";
 import { btn, input, label } from "./ui";
 
-function SubmitButton({ children, className = btn.primary }: { children: React.ReactNode; className?: string }) {
+export function SubmitButton({ children, className = btn.primary }: { children: React.ReactNode; className?: string }) {
   const { pending } = useFormStatus();
   return (
     <button className={className} disabled={pending}>
       {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
       {children}
     </button>
+  );
+}
+
+/** Submit button with the action's success or error message beside it (pantry and profile forms). */
+export function SubmitRow({
+  state,
+  className,
+  children,
+}: {
+  state: { ok?: boolean; message?: string; error?: string };
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <SubmitButton className={className}>{children}</SubmitButton>
+      <p aria-live="polite" className={`text-sm font-semibold ${state.error ? "text-tomato" : "text-herb"}`}>
+        {state.error ?? (state.ok ? <><Check className="mr-1 inline h-4 w-4" aria-hidden />{state.message}</> : null)}
+      </p>
+    </div>
   );
 }
 
@@ -84,14 +104,9 @@ export function AddPantryItemForm() {
     <form action={action} className="space-y-3">
       {/* key resets the fields after each successful add */}
       <Fields key={state.n} prefix="add" />
-      <div className="flex flex-wrap items-center gap-3">
-        <SubmitButton>
-          <Plus className="h-4 w-4" aria-hidden /> Add to pantry
-        </SubmitButton>
-        <p aria-live="polite" className={`text-sm font-semibold ${state.error ? "text-tomato" : "text-herb"}`}>
-          {state.error ?? (state.ok ? <><Check className="mr-1 inline h-4 w-4" aria-hidden />{state.message}</> : null)}
-        </p>
-      </div>
+      <SubmitRow state={state}>
+        <Plus className="h-4 w-4" aria-hidden /> Add to pantry
+      </SubmitRow>
     </form>
   );
 }
