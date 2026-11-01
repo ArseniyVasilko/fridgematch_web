@@ -48,8 +48,12 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
   const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
   const diets = sp.diet == null ? saved.diets : parseList(sp.diet, DIETS.map((d) => d.id));
-  const avoid = sp.avoid == null ? saved.avoid : parseIngredientList(sp.avoid).filter((a) => a !== NONE);
-  const avoidOptions = parseIngredientList([...saved.avoid, ...avoid]); // saved ones stay listed when unticked
+  const avoid =
+    sp.avoid == null
+      ? saved.avoid
+      : parseIngredientList(sp.avoid, Infinity).filter((a) => a !== NONE).slice(0, LIMITS.avoidedIngredients);
+  // saved ones stay listed when unticked
+  const avoidOptions = parseIngredientList([...saved.avoid, ...avoid], LIMITS.avoidedIngredients);
   const cuisines = await getCuisines();
   const cuisine = cuisines.find((c) => c === first(sp.cuisine)) ?? null;
   const sort = first(sp.sort) ?? "best";

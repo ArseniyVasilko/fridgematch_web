@@ -8,8 +8,8 @@ export function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
-/** "egg, rice,onion" -> ["egg", "rice", "onion"] (deduplicated, max LIMITS.ingredientsPerList). */
-export function parseIngredientList(v: string | string[] | undefined): string[] {
+/** "egg, rice,onion" -> ["egg", "rice", "onion"] (deduplicated, at most `max`). */
+export function parseIngredientList(v: string | string[] | undefined, max: number = LIMITS.ingredientsPerList): string[] {
   const raw = Array.isArray(v) ? v.join(",") : (v ?? "");
   const seen = new Set<string>();
   const out: string[] = [];
@@ -19,7 +19,7 @@ export function parseIngredientList(v: string | string[] | undefined): string[] 
     if (!name || seen.has(key)) continue;
     seen.add(key);
     out.push(name);
-    if (out.length >= LIMITS.ingredientsPerList) break;
+    if (out.length >= max) break;
   }
   return out;
 }

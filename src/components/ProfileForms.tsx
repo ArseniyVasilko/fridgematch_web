@@ -10,6 +10,7 @@ import {
   updateDietary,
   type ProfileFormState,
 } from "@/app/actions/profile";
+import { LIMITS } from "@/lib/constants";
 import { DIETS, type DietId } from "@/lib/recipe-filters";
 import { IngredientField } from "./IngredientField";
 import { SubmitButton, SubmitRow } from "./PantryForms";
@@ -23,7 +24,7 @@ export function AccountForm({ name, email }: { name: string | null; email: strin
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className={label}>Name</label>
-          <input id="name" name="name" autoComplete="given-name" maxLength={60} defaultValue={name ?? ""} className={input} />
+          <input id="name" name="name" autoComplete="given-name" maxLength={LIMITS.userNameLength} defaultValue={name ?? ""} className={input} />
         </div>
         <div>
           <label htmlFor="email" className={label}>Email</label>
@@ -94,11 +95,11 @@ export function PasswordForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="new-password" className={label}>New password</label>
-          <input id="new-password" name="newPassword" type="password" autoComplete="new-password" required minLength={8} className={input} />
+          <input id="new-password" name="newPassword" type="password" autoComplete="new-password" required minLength={LIMITS.passwordMinLength} className={input} />
         </div>
         <div>
           <label htmlFor="confirm-password" className={label}>Confirm new password</label>
-          <input id="confirm-password" name="confirm" type="password" autoComplete="new-password" required minLength={8} className={input} />
+          <input id="confirm-password" name="confirm" type="password" autoComplete="new-password" required minLength={LIMITS.passwordMinLength} className={input} />
         </div>
       </div>
       <SubmitRow state={state}>Change password</SubmitRow>

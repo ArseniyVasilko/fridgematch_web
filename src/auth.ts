@@ -7,11 +7,11 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { DURATIONS } from "@/lib/constants";
+import { DURATIONS, LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 
 /** Used to keep timing the same when an email is not registered. */
-const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", LIMITS.passwordHashRounds);
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),

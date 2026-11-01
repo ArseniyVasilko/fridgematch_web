@@ -12,6 +12,8 @@ export const LIMITS = {
   userNameLength: 60,
   passwordMinLength: 8,
   passwordMaxLength: 200,
+  /** bcrypt cost factor; the login check's dummy hash must use the same value. */
+  passwordHashRounds: 10,
   pantryQuantityMax: 100_000,
   /** Recipes per "Show more" step on /recipes, and the most one page can show. */
   recipesPerPage: 48,

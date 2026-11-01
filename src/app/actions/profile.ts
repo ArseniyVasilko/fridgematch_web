@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { signOut, updateSession } from "@/auth";
+import { LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { emailSchema, getProfile, nameSchema, passwordSchema } from "@/lib/profile";
 import { DIETS } from "@/lib/recipe-filters";
@@ -64,8 +65,14 @@ export async function addAvoidedIngredient(prev: ProfileFormState, formData: For
   const [name] = parseIngredientList(String(formData.get("name") ?? ""));
   if (!name) return { error: "Enter an ingredient.", n: prev.n };
   const avoid = (await getProfile(userId))?.avoid ?? [];
-  // parseIngredientList drops duplicates and keeps at most 30
-  await prisma.user.update({ where: { id: userId }, data: { avoid: parseIngredientList([...avoid, name]).join(",") } });
+  const isNew = !avoid.some((a) => a.toLowerCase() === name.toLowerCase());
+  if (isNew && avoid.length >= LIMITS.avoidedIngredients) {
+    return { error: `You can avoid up to ${LIMITS.avoidedIngredients} ingredients. Remove one to add another.`, n: prev.n };
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { avoid: parseIngredientList([...avoid, name], LIMITS.avoidedIngredients).join(",") },
+  });
   revalidatePath("/profile");
   return { ok: true, message: `Recipes with ${name} will be left out.`, n: (prev.n ?? 0) + 1 };
 }
@@ -86,7 +93,7 @@ export async function changePassword(_prev: ProfileFormState, formData: FormData
   if (!(await passwordMatches(userId, String(formData.get("password") ?? "")))) {
     return { error: "Your current password is not right." };
   }
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(parsed.data, 10) } });
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(parsed.data, LIMITS.passwordHashRounds) } });
   return { ok: true, message: "Password changed." };
 }
 

@@ -56,7 +56,7 @@ export async function registerAction(_prev: AuthFormState, formData: FormData): 
     return { fieldErrors: { email: "An account with this email already exists. Try logging in." }, email, name };
   }
   await prisma.user.create({
-    data: { email, name: name || null, passwordHash: await bcrypt.hash(password, 10) },
+    data: { email, name: name || null, passwordHash: await bcrypt.hash(password, LIMITS.passwordHashRounds) },
   });
   try {
     await signIn("credentials", { email, password, redirectTo });
