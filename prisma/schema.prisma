@@ -53,17 +53,20 @@ model PantryItem {
   @@index([userId])
 }
 
-/// Round 2 (should-have): automatic shopping list
+/// Shopping list. `measure` is free text like RecipeIngredient.measure
+/// ("2 cloves", "300ml"). `recipeId` is the recipe it was added from, or null
+/// for items the user typed in.
 model ShoppingListItem {
   id           Int        @id @default(autoincrement())
   userId       Int
   ingredientId Int
-  quantity     Float?
-  unit         String?
+  recipeId     Int?
+  measure      String     @default("")
   checked      Boolean    @default(false)
   createdAt    DateTime   @default(now())
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  recipe       Recipe?    @relation(fields: [recipeId], references: [id], onDelete: SetNull)
 
   @@index([userId])
 }
@@ -71,20 +74,21 @@ model ShoppingListItem {
 /// Recipes synced from TheMealDB (source = "themealdb"). Community recipes
 /// (could-have) will use source = "community".
 model Recipe {
-  id           Int                @id @default(autoincrement())
-  externalId   String?            @unique
-  source       String             @default("themealdb")
-  name         String
-  category     String?
-  area         String?
-  instructions String
-  imageUrl     String?
-  youtubeUrl   String?
-  sourceUrl    String?
-  tags         String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  ingredients  RecipeIngredient[]
+  id            Int                @id @default(autoincrement())
+  externalId    String?            @unique
+  source        String             @default("themealdb")
+  name          String
+  category      String?
+  area          String?
+  instructions  String
+  imageUrl      String?
+  youtubeUrl    String?
+  sourceUrl     String?
+  tags          String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  ingredients   RecipeIngredient[]
+  shoppingItems ShoppingListItem[]
 
   @@index([name])
 }

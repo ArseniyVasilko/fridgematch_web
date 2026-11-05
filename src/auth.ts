@@ -40,8 +40,12 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
     }),
   ],
   callbacks: {
-    jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session }) {
       if (user?.id) token.uid = user.id;
+      // the account was deleted (or the database reset) since this login: treat the visitor as logged out
+      else if (token.uid && !(await prisma.user.findUnique({ where: { id: Number(token.uid) }, select: { id: true } }))) {
+        return null;
+      }
       // profile edits (updateSession) refresh the name and email shown in the header
       if (trigger === "update" && session?.user) {
         token.name = session.user.name;

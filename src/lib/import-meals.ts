@@ -4,7 +4,7 @@
  * No "server-only" import here because it also runs from the command line.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
-import { slugifyIngredient } from "./ingredients";
+import { slugifyIngredient, titleCase } from "./ingredients";
 import type { NormalisedMeal } from "./mealdb";
 
 type Db = InstanceType<typeof PrismaClient>;
@@ -27,6 +27,12 @@ export async function ensureIngredients(db: Db, names: string[]): Promise<Map<st
     ids.set(slug, created.id);
   }
   return ids;
+}
+
+/** Id for one ingredient name as a user typed it, creating it if needed. */
+export async function ensureIngredient(db: Db, name: string): Promise<number> {
+  const ids = await ensureIngredients(db, [titleCase(name)]);
+  return ids.get(slugifyIngredient(name))!;
 }
 
 export async function importMeals(db: Db, meals: NormalisedMeal[], source = "themealdb") {

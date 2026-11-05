@@ -123,7 +123,7 @@ export function DeleteAccountButton() {
       >
         <form action={action} className="space-y-3">
           <h2 id="delete-title" className="font-sans text-lg font-extrabold text-ink">Delete your account?</h2>
-          <p className="text-sm text-muted">Your pantry and saved preferences will be removed. This can&apos;t be undone.</p>
+          <p className="text-sm text-muted">Your pantry, shopping list and saved preferences will be removed. This can&apos;t be undone.</p>
           <div>
             <label htmlFor="delete-password" className={label}>Enter your password to confirm</label>
             <input id="delete-password" name="password" type="password" autoComplete="current-password" required className={input} />

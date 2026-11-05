@@ -15,7 +15,7 @@ const TRY_THESE = ["chicken", "eggs", "rice", "tomato", "onion"];
 const FEATURES = [
   { icon: Search, title: "Ingredient matching", text: "Find recipes based on what you already have.", href: "/recipes" },
   { icon: Refrigerator, title: "Pantry tracker", text: "Keep track of your ingredients and expiry dates.", href: "/pantry" },
-  { icon: ListChecks, title: "Shopping list", text: "Add missing ingredients with one click.", soon: true },
+  { icon: ListChecks, title: "Shopping list", text: "Add missing ingredients with one click.", href: "/shopping-list" },
   { icon: Users, title: "Community recipes", text: "Discover and share recipes with fellow food lovers.", soon: true },
 ];
 

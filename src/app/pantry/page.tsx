@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, ChefHat, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, ChefHat, ListChecks, Trash2 } from "lucide-react";
 import { clearExpiredItems } from "@/app/actions/pantry";
 import { JarIcon } from "@/components/illustrations";
 import { AddPantryItemForm, PantryItemActions } from "@/components/PantryForms";
@@ -90,11 +90,16 @@ export default async function PantryPage() {
             What you have at home. Items expiring within {DURATIONS.expiringSoonDays} days are highlighted.
           </p>
         </div>
-        {items.length > 0 && (
-          <Link href="/recipes?pantry=1" className={btn.primary}>
-            <ChefHat className="h-4 w-4" aria-hidden /> Cook with my pantry
+        <div className="flex flex-wrap gap-2">
+          <Link href="/shopping-list" className={btn.outline}>
+            <ListChecks className="h-4 w-4" aria-hidden /> Shopping list
           </Link>
-        )}
+          {items.length > 0 && (
+            <Link href="/recipes?pantry=1" className={btn.primary}>
+              <ChefHat className="h-4 w-4" aria-hidden /> Cook with my pantry
+            </Link>
+          )}
+        </div>
       </div>
 
       {useSoon.length > 0 && (
