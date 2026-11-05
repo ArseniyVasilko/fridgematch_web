@@ -13,7 +13,7 @@
  */
 import { coreIngredient, isStaple } from "./ingredients";
 import { isExpiringSoon } from "./expiry";
-import { parseMeasure, toBaseAmount } from "./measure";
+import { formatAmount, parseMeasure, toBaseAmount } from "./measure";
 
 export interface CatalogueIngredient {
   name: string;
@@ -47,6 +47,8 @@ export interface IngredientMatch {
   /** The user's ingredient that satisfied this one. */
   matchedWith?: string;
   expiringSoon?: boolean;
+  /** For "partial": the amount the user is short by, e.g. "1" or "300ml". */
+  stillNeeded?: string;
 }
 
 export interface RecipeMatch {
@@ -89,19 +91,23 @@ function prepare(user: UserIngredient[]): Map<string, PreparedUserIngredient[]> 
 /**
  * Decide if the user has enough of an ingredient. Only pantry items have a
  * quantity; if either side's amount is unknown or the units differ we trust
- * that the user has enough.
+ * that the user has enough. For "partial", also returns how much is still needed.
  */
-function amountStatus(candidates: PreparedUserIngredient[], measure: string): "have" | "partial" {
+function amountStatus(
+  candidates: PreparedUserIngredient[],
+  measure: string,
+): { status: "have" } | { status: "partial"; stillNeeded: string } {
   const needed = parseMeasure(measure);
-  if (!needed) return "have";
+  if (!needed) return { status: "have" };
   let total = 0;
   for (const c of candidates) {
-    if (c.quantity == null) return "have"; // typed in without amount
+    if (c.quantity == null) return { status: "have" }; // typed in without amount
     const amount = toBaseAmount(c.quantity, c.unit);
-    if (!amount || amount.unit !== needed.unit) return "have";
+    if (!amount || amount.unit !== needed.unit) return { status: "have" };
     total += amount.value;
   }
-  return total + 1e-9 >= needed.value ? "have" : "partial";
+  if (total + 1e-9 >= needed.value) return { status: "have" };
+  return { status: "partial", stillNeeded: formatAmount({ value: needed.value - total, unit: needed.unit }) };
 }
 
 export function evaluateRecipe(
@@ -121,13 +127,13 @@ export function evaluateRecipe(
   const ingredients: IngredientMatch[] = recipe.ingredients.map((ing) => {
     const candidates = byCore.get(coreIngredient(ing.name));
     if (candidates && candidates.length > 0) {
-      const status = amountStatus(candidates, ing.measure);
+      const amount = amountStatus(candidates, ing.measure);
       const expiringSoon = candidates.some((c) => c.fromPantry && isExpiringSoon(c.expiryDate, now));
       if (!isStaple(ing.name)) matchedCount += 1;
       if (expiringSoon) usesExpiring += 1;
       haveCount += 1;
-      points += status === "have" ? 1 : 0.5;
-      return { name: ing.name, measure: ing.measure, status, matchedWith: candidates[0].name, expiringSoon };
+      points += amount.status === "have" ? 1 : 0.5;
+      return { name: ing.name, measure: ing.measure, ...amount, matchedWith: candidates[0].name, expiringSoon };
     }
     if (assumeStaples && isStaple(ing.name)) {
       haveCount += 1;

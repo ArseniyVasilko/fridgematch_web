@@ -24,6 +24,10 @@ const FAQ = [
     a: `Add an expiry date to items in My Pantry. Items expiring within ${DURATIONS.expiringSoonDays} days are highlighted at the top, with a shortcut to recipes that use them. Expired items are not used for matching.`,
   },
   {
+    q: "How does the shopping list work?",
+    a: "When you're logged in, each recipe shows what's missing from your pantry. Tap the + next to an ingredient, or Add all missing, to add it with the amount the recipe needs. If you only have part of an amount, only the rest is added. Your list is under Shopping list in the menu, grouped by recipe. You can add your own items, edit amounts and tick things off as you shop. Move ticked to pantry then adds everything you bought to your pantry in one go.",
+  },
+  {
     q: "Why don't recipes show cooking time or servings?",
     a: "Our recipe data comes from TheMealDB, which doesn't include these yet. We show the meal type and cuisine instead.",
   },
@@ -55,6 +59,10 @@ export default function AboutPage() {
         <li>
           Create an account to save your <Link href="/pantry" className="font-bold text-brown-dark underline">pantry</Link> with
           expiry dates, then use <strong>Match with pantry</strong> so you don&apos;t have to type your ingredients every time.
+        </li>
+        <li>
+          Missing something? Tap <strong>+</strong> next to an ingredient, or <strong>Add all missing</strong>, to put it on your{" "}
+          <Link href="/shopping-list" className="font-bold text-brown-dark underline">shopping list</Link>.
         </li>
       </ol>
 

@@ -57,6 +57,16 @@ describe("evaluateRecipe", () => {
     expect(m.score).toBeCloseTo(2.5 / 3);
   });
 
+  it("says how much is still needed for partial ingredients", () => {
+    const m = evaluateRecipe(pancakes, [
+      { name: "eggs", quantity: 1, unit: "pcs", fromPantry: true },
+      { name: "milk", quantity: 200, unit: "ml", fromPantry: true },
+    ]);
+    expect(m.ingredients.find((i) => i.name === "Eggs")?.stillNeeded).toBe("1");
+    expect(m.ingredients.find((i) => i.name === "Milk")?.stillNeeded).toBe("100ml");
+    expect(m.ingredients.find((i) => i.name === "Plain Flour")?.stillNeeded).toBeUndefined();
+  });
+
   it("trusts the user when units cannot be compared", () => {
     const m = evaluateRecipe(pancakes, [{ name: "milk", quantity: 1, unit: "cup", fromPantry: true }]);
     // 1 cup = 240 ml < 300 ml -> partial, same base unit

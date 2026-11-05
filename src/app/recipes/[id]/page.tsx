@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Check, CircleDashed, ExternalLink, Globe2, Leaf, PlayCircle, Refrigerator, UtensilsCrossed, X } from "lucide-react";
+import { ArrowLeft, Check, CircleDashed, ExternalLink, Globe2, Leaf, ListChecks, PlayCircle, Refrigerator, UtensilsCrossed, X } from "lucide-react";
+import { addToShoppingList } from "@/app/actions/shopping";
 import { MatchBar } from "@/components/MatchBar";
 import { RecipeImage } from "@/components/RecipeImage";
 import { TrackRecentlyViewed } from "@/components/RecentlyViewed";
+import { AddAllMissingButton, AddIngredientButton, LoginToAddAllLink, LoginToAddLink } from "@/components/ShoppingButtons";
 import { btn, card } from "@/components/ui";
 import type { IngredientMatch, UserIngredient } from "@/lib/matching";
 import { getPantryForMatching } from "@/lib/pantry";
+import { combineMeasures } from "@/lib/measure";
 import { evaluateForDetails, getRecipe } from "@/lib/recipes";
 import { first, parseIngredientList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
+import { getShoppingIngredientIds } from "@/lib/shopping";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -46,30 +50,49 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
   if (!recipe) notFound();
 
   const ingredients = parseIngredientList(sp.i);
-  const usePantry = first(sp.pantry) === "1";
+  const pantryParam = first(sp.pantry) === "1";
   const basics = first(sp.basics) !== "0";
   const userId = await getUserId();
+  // logged-in users opening a recipe without a search are compared with their pantry
+  const usePantry = pantryParam || (!!userId && ingredients.length === 0);
+  const fromSearch = ingredients.length > 0 || pantryParam;
 
   const selfQuery = new URLSearchParams();
   if (ingredients.length) selfQuery.set("i", ingredients.join(","));
-  if (usePantry) selfQuery.set("pantry", "1");
+  if (pantryParam) selfQuery.set("pantry", "1");
   if (!basics) selfQuery.set("basics", "0");
   const selfUrl = `/recipes/${recipe.id}${selfQuery.size ? `?${selfQuery}` : ""}`;
+  const loginUrl = `/login?callbackUrl=${encodeURIComponent(selfUrl)}`;
 
-  if (usePantry && !userId) redirect(`/login?callbackUrl=${encodeURIComponent(selfUrl)}`);
+  if (pantryParam && !userId) redirect(loginUrl);
 
   const pantry: UserIngredient[] = usePantry && userId ? await getPantryForMatching(userId) : [];
   const user: UserIngredient[] = [...ingredients.map((name) => ({ name })), ...pantry];
-  const hasInput = user.length > 0;
+  const comparing = user.length > 0 || usePantry;
   const match = evaluateForDetails(recipe, user, { assumeStaples: basics });
+
+  // Shopping list: missing and partial ingredients (partial ones only need what's still short).
+  // Recipes can list an ingredient twice ("1 clove", "2 cloves"): that becomes one item.
+  // Guests see the same buttons; they lead to Log in and back here.
+  const amounts = new Map<number, string[]>();
+  if (comparing) {
+    match.ingredients.forEach((ing, i) => {
+      if (ing.status !== "missing" && ing.status !== "partial") return;
+      const id = recipe.ingredients[i].ingredientId;
+      amounts.set(id, [...(amounts.get(id) ?? []), ing.stillNeeded ?? ing.measure]);
+    });
+  }
+  const toBuy = new Map([...amounts].map(([ingredientId, a]) => [ingredientId, { ingredientId, measure: combineMeasures(a) }]));
+  const onList = userId && toBuy.size > 0 ? await getShoppingIngredientIds(userId, recipe.id) : new Set<number>();
+  const notOnList = [...toBuy.values()].filter((b) => !onList.has(b.ingredientId));
 
   const withPantryUrl = (() => {
     const q = new URLSearchParams(selfQuery);
     q.set("pantry", "1");
     return `/recipes/${recipe.id}?${q}`;
   })();
-  const backUrl = hasInput || usePantry
-    ? recipesUrl({ i: ingredients, pantry: usePantry, basics: basics ? null : "0" })
+  const backUrl = fromSearch
+    ? recipesUrl({ i: ingredients, pantry: pantryParam, basics: basics ? null : "0" })
     : "/recipes";
   const steps = toSteps(recipe.instructions);
   const shown = new Set([recipe.category, recipe.area].filter(Boolean).map((t) => t!.toLowerCase()));
@@ -83,7 +106,7 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
         recipe={{ id: recipe.id, name: recipe.name, category: recipe.category, area: recipe.area, imageUrl: recipe.imageUrl }}
       />
       <Link href={backUrl} className={`${btn.ghost} -ml-3`}>
-        <ArrowLeft className="h-4 w-4" aria-hidden /> {hasInput ? "Back to results" : "All recipes"}
+        <ArrowLeft className="h-4 w-4" aria-hidden /> {fromSearch ? "Back to results" : "All recipes"}
       </Link>
 
       <div className="mt-2 grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
@@ -113,7 +136,7 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
 
           {/* Match summary */}
           <div className={`${card} mt-5 p-4`}>
-            {hasInput ? (
+            {comparing ? (
               <>
                 <p className="flex items-baseline justify-between gap-2 font-extrabold text-ink">
                   <span>
@@ -158,10 +181,22 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
 
           {/* Ingredients */}
           <section aria-labelledby="ingredients-heading" className="mt-6">
-            <h2 id="ingredients-heading" className="text-3xl">Ingredients</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 id="ingredients-heading" className="text-3xl">Ingredients</h2>
+              {notOnList.length > 0 && !userId ? (
+                <LoginToAddAllLink href={loginUrl} count={notOnList.length} />
+              ) : notOnList.length > 0 ? (
+                <AddAllMissingButton action={addToShoppingList.bind(null, recipe.id, notOnList)} count={notOnList.length} />
+              ) : toBuy.size > 0 ? (
+                <Link href="/shopping-list" className="inline-flex items-center gap-1 text-sm font-bold text-brown-dark underline">
+                  <ListChecks className="h-4 w-4" aria-hidden /> View shopping list
+                </Link>
+              ) : null}
+            </div>
             <ul className="mt-3 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
               {match.ingredients.map((ing, i) => {
-                const s = hasInput ? STATUS[ing.status] : null;
+                const s = comparing ? STATUS[ing.status] : null;
+                const buy = toBuy.get(recipe.ingredients[i].ingredientId);
                 return (
                   <li key={`${ing.name}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
                     {s ? (
@@ -179,11 +214,19 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                       {s && <span className="sr-only">: {s.label}</span>}
                     </span>
                     <span className="text-right text-sm text-muted">{ing.measure}</span>
+                    {buy && !userId && <LoginToAddLink href={loginUrl} name={ing.name} />}
+                    {buy && userId && (
+                      <AddIngredientButton
+                        action={addToShoppingList.bind(null, recipe.id, [buy])}
+                        name={ing.name}
+                        onList={onList.has(buy.ingredientId)}
+                      />
+                    )}
                   </li>
                 );
               })}
             </ul>
-            {hasInput && (
+            {comparing && (
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted">
                 {(["have", "partial", "missing", "staple"] as const).map((k) => (
                   <span key={k} className="inline-flex items-center gap-1">
