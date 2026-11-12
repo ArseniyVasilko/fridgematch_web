@@ -15,6 +15,9 @@ export const LIMITS = {
   /** bcrypt cost factor; the login check's dummy hash must use the same value. */
   passwordHashRounds: 10,
   pantryQuantityMax: 100_000,
+  shoppingListItems: 200,
+  /** Amount text on a shopping list item ("2 cloves", "1 clove + 2 cloves"). Recipe measures run up to 60 characters. */
+  shoppingMeasureLength: 100,
   /** Recipes per "Show more" step on /recipes, and the most one page can show. */
   recipesPerPage: 48,
   recipesPerPageMax: 500,

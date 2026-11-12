@@ -18,7 +18,7 @@ Built from the design document (Phase: Design, Focus area: User Interface).
 | About / Help | `/about` | Done |
 | Mobile-first responsive layout | everywhere | Done |
 
-**Round 2 (should-haves, not started):** shopping list (the schema already has `ShoppingListItem`), saved recipes (heart icon), "mark as cooked" (subtracts ingredients from the pantry), PWA with push expiry reminders.
+**Round 2 (should-haves):** shopping list is done: add missing ingredients from a recipe with +, view, tick off and edit the list on `/shopping-list`, and move bought items to the pantry. Not started: saved recipes (heart icon), "mark as cooked" (subtracts ingredients from the pantry), PWA with push expiry reminders.
 **Could-haves:** community recipes, dietary filters, group fridges.
 
 ## Getting started

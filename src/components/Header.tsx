@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CircleHelp, LogOut, Refrigerator, UserRound } from "lucide-react";
+import { BookOpen, CircleHelp, ListChecks, LogOut, Refrigerator, UserRound } from "lucide-react";
 import { auth } from "@/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./Logo";
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/", label: "Home" },
   { href: "/recipes", label: "Recipes" },
   { href: "/pantry", label: "My Pantry" },
+  { href: "/shopping-list", label: "Shopping List" },
   { href: "/about", label: "About / Help" },
 ];
 
@@ -17,10 +18,12 @@ function IconLink({ href, label, children }: { href: string; label: string; chil
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-brown-dark hover:bg-sand"
+      title={label}
+      className="flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold text-brown-dark hover:bg-sand"
     >
       {children}
-      {label}
+      {/* icons only on tablets, where the four labels don't fit between the logo and the account menu */}
+      <span className="sr-only lg:not-sr-only">{label}</span>
     </Link>
   );
 }
@@ -40,12 +43,15 @@ export async function Header() {
 
       <nav
         aria-label="Main"
-        className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">          
+        className="absolute left-1/2 hidden w-max -translate-x-1/2 items-center gap-2 md:flex lg:gap-6">
         <IconLink href="/recipes" label="Recipes">
             <BookOpen className="h-5 w-5" aria-hidden />
           </IconLink>
           <IconLink href="/pantry" label="My Pantry">
             <Refrigerator className="h-5 w-5" aria-hidden />
+          </IconLink>
+          <IconLink href="/shopping-list" label="Shopping List">
+            <ListChecks className="h-5 w-5" aria-hidden />
           </IconLink>
           <IconLink href="/about" label="Help">
             <CircleHelp className="h-5 w-5" aria-hidden />

@@ -5,8 +5,7 @@ import { z } from "zod";
 import { LIMITS } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { parseDateInput } from "@/lib/expiry";
-import { ensureIngredients } from "@/lib/import-meals";
-import { slugifyIngredient, titleCase } from "@/lib/ingredients";
+import { ensureIngredient } from "@/lib/import-meals";
 import { PANTRY_UNITS } from "@/lib/measure";
 import { requireUserId } from "@/lib/session";
 
@@ -49,11 +48,6 @@ function readItem(formData: FormData) {
   });
 }
 
-async function ingredientIdFor(name: string) {
-  const ids = await ensureIngredients(prisma, [titleCase(name)]);
-  return ids.get(slugifyIngredient(name))!;
-}
-
 export async function addPantryItem(prev: PantryFormState, formData: FormData): Promise<PantryFormState> {
   const userId = await requireUserId("/pantry");
   const parsed = readItem(formData);
@@ -62,7 +56,7 @@ export async function addPantryItem(prev: PantryFormState, formData: FormData): 
   await prisma.pantryItem.create({
     data: {
       userId,
-      ingredientId: await ingredientIdFor(name),
+      ingredientId: await ensureIngredient(prisma, name),
       quantity,
       unit: quantity == null ? null : unit || "pcs",
       expiryDate: expiry,
@@ -82,7 +76,7 @@ export async function updatePantryItem(_prev: PantryFormState, formData: FormDat
   const res = await prisma.pantryItem.updateMany({
     where: { id, userId },
     data: {
-      ingredientId: await ingredientIdFor(name),
+      ingredientId: await ensureIngredient(prisma, name),
       quantity,
       unit: quantity == null ? null : unit || "pcs",
       expiryDate: expiry,

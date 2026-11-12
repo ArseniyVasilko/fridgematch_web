@@ -82,6 +82,37 @@ export function toBaseAmount(quantity: number, unit: string | null | undefined):
   return { value: quantity * u.factor, unit: u.unit };
 }
 
+const PANTRY_UNIT_FOR: Record<BaseUnit, (typeof PANTRY_UNITS)[number]> = { g: "g", ml: "ml", tsp: "tsp", count: "pcs" };
+
+/** Quantity and unit for the pantry from a free-text measure (empty if it can't be read). */
+export function toPantryAmount(measure: string): { quantity: number | null; unit: string | null } {
+  const a = parseMeasure(measure);
+  return a ? { quantity: Math.round(a.value * 100) / 100, unit: PANTRY_UNIT_FOR[a.unit] } : { quantity: null, unit: null };
+}
+
+/** Write a base amount as a measure: "1", "150g", "120ml", "2 tsp". */
+export function formatAmount({ value, unit }: Amount): string {
+  const n = String(Math.round(value * 100) / 100);
+  if (unit === "count") return n;
+  if (unit === "tsp") return `${n} tsp`;
+  return `${n}${unit}`;
+}
+
+/**
+ * One amount for an ingredient a recipe lists more than once: added up when every
+ * measure has the same unit ("1" + "2" → "3"), otherwise joined ("1 clove + 2 cloves").
+ */
+export function combineMeasures(measures: string[]): string {
+  const parts = measures.map((m) => m.trim()).filter(Boolean);
+  if (parts.length < 2) return parts[0] ?? "";
+  const amounts = parts.map(parseMeasure);
+  const unit = amounts[0]?.unit;
+  if (unit && amounts.every((a) => a?.unit === unit)) {
+    return formatAmount({ value: amounts.reduce((sum, a) => sum + a!.value, 0), unit });
+  }
+  return parts.join(" + ");
+}
+
 /** Parse a TheMealDB measure. Returns null if we cannot tell the amount. */
 export function parseMeasure(measure: string | null | undefined): Amount | null {
   if (!measure) return null;
