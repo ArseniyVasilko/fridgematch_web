@@ -16,6 +16,7 @@ import { getPantryForMatching } from "@/lib/pantry";
 import { getProfile } from "@/lib/profile";
 import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
 import { browseRecipes, getCuisines, getRecipeFacets, matchRecipes } from "@/lib/recipes";
+import { getSavedRecipeIds } from "@/lib/saved";
 import { first, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 
@@ -116,6 +117,8 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
   const facets = await getRecipeFacets();
   const filters = { types, diets, cuisine, avoid };
+  const savedIds = userId ? await getSavedRecipeIds(userId) : new Set<number>();
+  const save = (id: number) => ({ saved: savedIds.has(id), loggedIn: !!userId });
   let cards: React.ReactNode[] = [];
   let total = 0;
   let counts: OptionCounts;
@@ -131,13 +134,13 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     if (sort === "name") results = [...results].sort((a, b) => a.recipe.name.localeCompare(b.recipe.name));
     total = results.length;
     cards = results.slice(0, limit).map((m) => (
-      <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} />
+      <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} save={save(m.recipe.id)} />
     ));
   } else {
     const filtered = applyFilters(await browseRecipes({ q }), (r) => facets.get(r.id), filters);
     counts = filtered.counts;
     total = filtered.items.length;
-    cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />);
+    cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} save={save(r.id)} />);
   }
 
   const title = matchMode ? "Recipe results" : q ? `Recipes for “${q}”` : "All recipes";

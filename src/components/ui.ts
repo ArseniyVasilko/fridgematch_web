@@ -20,3 +20,10 @@ export const input =
   "w-full rounded-xl border border-line bg-card px-3 py-2.5 text-ink placeholder:text-muted/80 focus:border-brown focus:outline-none focus:ring-2 focus:ring-brown/30";
 
 export const label = "mb-1 block text-sm font-bold text-brown-dark";
+
+/**
+ * Hover hint left of a small round button; sits inside a `group/hint relative` wrapper
+ * (named, so a hover on a surrounding `group` such as a recipe card doesn't show it). Add a bg and starting opacity.
+ */
+export const hoverHint =
+  "pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-bold text-white transition group-hover/hint:opacity-100 group-focus-within/hint:opacity-100";
