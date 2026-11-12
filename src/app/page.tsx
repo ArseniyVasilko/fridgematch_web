@@ -1,27 +1,32 @@
 import Link from "next/link";
-import { ArrowRight, ListChecks, Refrigerator, Search, Users } from "lucide-react";
+import { ArrowRight, Heart, ListChecks, Refrigerator, Search, Users } from "lucide-react";
 import { IngredientInput } from "@/components/IngredientInput";
 import { FridgeIllustration, JarIcon, MotionDashes, VeggiesIllustration, BowlArt } from "@/components/illustrations";
+import { MatchPantryButton } from "@/components/MatchPantryButton";
 import { RecipeCard } from "@/components/RecipeCard";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { btn, card } from "@/components/ui";
 import { LIMITS } from "@/lib/constants";
+import { getPantryForMatching } from "@/lib/pantry";
 import { getFeaturedRecipes } from "@/lib/recipes";
+import { getSavedRecipeIds } from "@/lib/saved";
 import { getUserId } from "@/lib/session";
-import { prisma } from "@/lib/db";
 
 const TRY_THESE = ["chicken", "eggs", "rice", "tomato", "onion"];
 
 const FEATURES = [
-  { icon: Search, title: "Ingredient matching", text: "Find recipes based on what you already have.", href: "/recipes" },
   { icon: Refrigerator, title: "Pantry tracker", text: "Keep track of your ingredients and expiry dates.", href: "/pantry" },
   { icon: ListChecks, title: "Shopping list", text: "Add missing ingredients with one click.", href: "/shopping-list" },
+  { icon: Heart, title: "Saved recipes", text: "Keep the recipes you love in one place.", href: "/pantry#saved-recipes" },
   { icon: Users, title: "Community recipes", text: "Discover and share recipes with fellow food lovers.", soon: true },
 ];
 
 export default async function HomePage() {
   const [featured, userId] = await Promise.all([getFeaturedRecipes(LIMITS.featuredRecipes), getUserId()]);
-  const pantryCount = userId ? await prisma.pantryItem.count({ where: { userId } }) : 0;
+  // expired items don't count: they aren't used for matching, so a pantry of only expired food is "empty"
+  const [pantryCount, savedIds] = userId
+    ? await Promise.all([getPantryForMatching(userId).then((p) => p.length), getSavedRecipeIds(userId)])
+    : [0, new Set<number>()];
 
   return (
     <>
@@ -36,11 +41,7 @@ export default async function HomePage() {
             <div className="mt-5">
               <IngredientInput tryThese={TRY_THESE} />
             </div>
-            {pantryCount > 0 && (
-              <Link href="/recipes?pantry=1" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brown-dark underline-offset-4 hover:underline">
-                Or cook with the {pantryCount} items in My Pantry <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            )}
+            <MatchPantryButton loggedIn={!!userId} pantryCount={pantryCount} />
           </div>
           <MotionDashes className="absolute right-[34%] top-10 hidden h-12 w-12 lg:block" />
           <FridgeIllustration className="absolute bottom-0 right-8 hidden h-[94%] max-h-96 lg:block" />
@@ -93,7 +94,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {featured.map((r) => (
-                <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />
+                <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} save={{ saved: savedIds.has(r.id), loggedIn: !!userId }} />
               ))}
             </div>
           </div>

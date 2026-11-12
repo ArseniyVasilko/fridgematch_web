@@ -25,6 +25,7 @@ model User {
   createdAt     DateTime           @default(now())
   pantryItems   PantryItem[]
   shoppingItems ShoppingListItem[]
+  savedRecipes  SavedRecipe[]
 }
 
 /// Canonical ingredient names (synced from TheMealDB's ingredient list plus
@@ -89,8 +90,20 @@ model Recipe {
   updatedAt     DateTime           @updatedAt
   ingredients   RecipeIngredient[]
   shoppingItems ShoppingListItem[]
+  savedBy       SavedRecipe[]
 
   @@index([name])
+}
+
+/// Recipes a user saved with the heart button (shown in My Pantry).
+model SavedRecipe {
+  userId    Int
+  recipeId  Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, recipeId])
 }
 
 model RecipeIngredient {

@@ -18,7 +18,7 @@ Built from the design document (Phase: Design, Focus area: User Interface).
 | About / Help | `/about` | Done |
 | Mobile-first responsive layout | everywhere | Done |
 
-**Round 2 (should-haves):** shopping list is done: add missing ingredients from a recipe with +, view, tick off and edit the list on `/shopping-list`, and move bought items to the pantry. Not started: saved recipes (heart icon), "mark as cooked" (subtracts ingredients from the pantry), PWA with push expiry reminders.
+**Round 2 (should-haves):** shopping list is done: add missing ingredients from a recipe with +, view, tick off and edit the list on `/shopping-list`, and move bought items to the pantry. Saved recipes are done: the heart on recipe cards and recipe pages saves a recipe to My Saved Recipes at the bottom of `/pantry`. Not started: "mark as cooked" (subtracts ingredients from the pantry), PWA with push expiry reminders.
 **Could-haves:** community recipes, dietary filters, group fridges.
 
 ## Getting started
@@ -57,7 +57,7 @@ No internet? Run `npm run db:seed` instead of `sync:mealdb`. It loads 18 sample 
 ## Project structure
 
 ```
-prisma/schema.prisma        database schema (User, Ingredient, PantryItem, ShoppingListItem, Recipe, RecipeIngredient)
+prisma/schema.prisma        database schema (User, Ingredient, PantryItem, ShoppingListItem, Recipe, RecipeIngredient, SavedRecipe)
 prisma/seed.ts              offline sample data (prisma/fixtures/sample-meals.json)
 scripts/sync-mealdb.ts      TheMealDB import
 src/auth.ts                 Auth.js config
@@ -83,6 +83,8 @@ src/components/             UI components (RecipeCard, IngredientInput, MatchBar
 4. **No cooking time or servings** on the cards, because TheMealDB doesn't provide them. The cards show meal type and cuisine instead. If we want them later, community recipes could add them.
 5. **Recently viewed recipes** (from the mobile wireframe) are stored in the browser's localStorage, so they also work for guests.
 6. **"Popular recipes"** is a daily-rotating pick for now, because we have no usage data yet.
+7. **Saved Recipes is a section of My Pantry, not its own page.** Sections 3.1 and 3.2 list Saved Recipes as a separate page, and 4.2 puts it in the desktop header. Instead, it's the last section of `/pantry` (`/pantry#saved-recipes`), reached from the home page's "Saved recipes" box, Help, or My Pantry, with no header link. Recipes opened from it get a "Back to My Saved Recipes" link. It shows 6 recipes, then "Show more".
+8. **Home page shortcuts.** Section 4.1 lists recipe matching among the home page feature boxes. The "Ingredient matching" box was replaced by a "Saved recipes" box, and matching moved into the hero as a "Match with my ingredients" button under the search bar. It opens pantry results sorted by fewest missing; guests and empty pantries get a popup instead.
 
 ## Deploying to Vercel (production)
 

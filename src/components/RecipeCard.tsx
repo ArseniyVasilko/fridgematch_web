@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Globe2, Leaf, UtensilsCrossed } from "lucide-react";
 import { MatchBar } from "./MatchBar";
 import { RecipeImage } from "./RecipeImage";
+import { SaveRecipeButton } from "./SaveRecipeButton";
 import { card } from "./ui";
 
 export interface RecipeCardData {
@@ -25,14 +26,23 @@ export function RecipeCard({
   match,
   href,
   compact = false,
+  save,
 }: {
   recipe: RecipeCardData;
   match?: RecipeCardMatch;
   href: string;
   compact?: boolean;
+  /** Shows the heart button. Left out where the saved state isn't known (Recently viewed). */
+  save?: { saved: boolean; loggedIn: boolean };
 }) {
   return (
-    <article className={`${card} group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md`}>
+    <article className={`${card} group relative flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md`}>
+      {/* outside the link: a button can't sit inside an <a> */}
+      {save && (
+        <div className="absolute right-4 top-4 z-10">
+          <SaveRecipeButton recipeId={recipe.id} recipeName={recipe.name} saved={save.saved} loggedIn={save.loggedIn} />
+        </div>
+      )}
       <Link href={href} className="flex flex-1 flex-col focus-visible:outline-offset-[-3px]">
         <div className={`relative m-2 mb-0 overflow-hidden rounded-xl ${compact ? "aspect-[4/3]" : "aspect-[4/3]"}`}>
           <RecipeImage src={recipe.imageUrl} alt={recipe.name} id={recipe.id} />
