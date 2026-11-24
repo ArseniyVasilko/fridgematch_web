@@ -1,6 +1,6 @@
 /**
- * Writes TheMealDB meals into our own database. Used by the sync script
- * (scripts/sync-mealdb.ts) and the offline seed (prisma/seed.ts).
+ * Writes normalised recipes into our own database. Used by the sync scripts
+ * (scripts/sync-mealdb.ts, scripts/sync-open-recipes.ts) and the offline seed (prisma/seed.ts).
  * No "server-only" import here because it also runs from the command line.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -21,11 +21,15 @@ export async function ensureIngredients(db: Db, names: string[]): Promise<Map<st
     select: { id: true, slug: true },
   });
   const ids = new Map(existing.map((i) => [i.slug, i.id]));
-  for (const [slug, name] of bySlug) {
-    if (ids.has(slug)) continue;
-    const created = await db.ingredient.create({ data: { slug, name }, select: { id: true } });
-    ids.set(slug, created.id);
-  }
+  const missing = [...bySlug].filter(([slug]) => !ids.has(slug)).map(([slug, name]) => ({ slug, name }));
+  if (missing.length === 0) return ids;
+  // one round trip for all new names; skipDuplicates covers a concurrent insert of the same slug
+  await db.ingredient.createMany({ data: missing, skipDuplicates: true });
+  const created = await db.ingredient.findMany({
+    where: { slug: { in: missing.map((m) => m.slug) } },
+    select: { id: true, slug: true },
+  });
+  for (const c of created) ids.set(c.slug, c.id);
   return ids;
 }
 
@@ -52,6 +56,7 @@ export async function importMeals(db: Db, meals: NormalisedMeal[], source = "the
       imageUrl: meal.imageUrl,
       youtubeUrl: meal.youtubeUrl,
       sourceUrl: meal.sourceUrl,
+      attribution: meal.attribution ?? null,
       tags: meal.tags,
     };
     const recipe = await db.recipe.upsert({

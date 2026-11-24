@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "sync:mealdb": "tsx scripts/sync-mealdb.ts"
+    "sync:mealdb": "tsx scripts/sync-mealdb.ts",
+    "sync:open-recipes": "tsx scripts/sync-open-recipes.ts"
   },
   "dependencies": {
     "@fontsource/chewy": "^5.3.0",

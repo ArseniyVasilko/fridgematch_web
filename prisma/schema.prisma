@@ -71,8 +71,9 @@ model ShoppingListItem {
   @@index([userId])
 }
 
-/// Recipes synced from TheMealDB (source = "themealdb"). Community recipes
-/// (could-have) will use source = "community".
+/// Recipes synced from TheMealDB (source = "themealdb") and the Open Recipe
+/// Corpus (source = "open-recipe-corpus"). Community recipes (could-have) will
+/// use source = "community".
 model Recipe {
   id            Int                @id @default(autoincrement())
   externalId    String?            @unique
@@ -84,6 +85,8 @@ model Recipe {
   imageUrl      String?
   youtubeUrl    String?
   sourceUrl     String?
+  /// Credit line the source's licence requires (shown on the details page).
+  attribution   String?
   tags          String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt

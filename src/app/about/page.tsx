@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     q: "Why don't recipes show cooking time or servings?",
-    a: "Our recipe data comes from TheMealDB, which doesn't include these yet. We show the meal type and cuisine instead.",
+    a: "TheMealDB, our main recipe source, doesn't include these yet. We show the meal type and cuisine instead.",
   },
 ];
 
@@ -92,7 +92,12 @@ export default function AboutPage() {
       </p>
       <p className="mt-4 text-sm text-muted">
         Recipe data and photos come from{" "}
-        <a href="https://www.themealdb.com" className="underline" target="_blank" rel="noreferrer">TheMealDB</a>. Only ingredient
+        <a href="https://www.themealdb.com" className="underline" target="_blank" rel="noreferrer">TheMealDB</a>. More recipes come from
+        the{" "}
+        <a href="https://github.com/rippy1911/open-recipe-corpus" className="underline" target="_blank" rel="noreferrer">
+          Open Recipe Corpus
+        </a>{" "}
+        (Wikibooks and public-domain cookbooks, machine-translated from Polish, CC BY-SA 4.0); these have no photos yet. Only ingredient
         and recipe searches are sent to it, never your account or pantry data. You can ask us to delete your account and data at any time.
       </p>
     </div>

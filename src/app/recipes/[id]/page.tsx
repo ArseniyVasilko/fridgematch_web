@@ -298,6 +298,15 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
               .
             </p>
           )}
+          {recipe.attribution && (
+            <p className="mt-6 text-xs text-muted">
+              Recipe from {recipe.attribution}. Shared under{" "}
+              <a className="underline" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">
+                CC BY-SA 4.0
+              </a>
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>
