@@ -8,9 +8,9 @@ describe("parseMeasure", () => {
     ["200g", { value: 200, unit: "g" }],
     ["1 kg", { value: 1000, unit: "g" }],
     ["1/2 cup", { value: 120, unit: "ml" }],
-    ["1 1/2 tbsp", { value: 4.5, unit: "tsp" }],
-    ["½ tsp", { value: 0.5, unit: "tsp" }],
-    ["1½ tbsp", { value: 4.5, unit: "tsp" }],
+    ["1 1/2 tbsp", { value: 22.5, unit: "ml" }],
+    ["½ tsp", { value: 2.5, unit: "ml" }],
+    ["1½ tbsp", { value: 22.5, unit: "ml" }],
     ["500ml", { value: 500, unit: "ml" }],
   ])("parses %s", (input, expected) => {
     const r = parseMeasure(input);
@@ -30,7 +30,8 @@ describe("toBaseAmount", () => {
   });
   it("converts units", () => {
     expect(toBaseAmount(1.5, "kg")).toEqual({ value: 1500, unit: "g" });
-    expect(toBaseAmount(2, "tbsp")).toEqual({ value: 6, unit: "tsp" });
+    expect(toBaseAmount(2, "tbsp")).toEqual({ value: 30, unit: "ml" });
+    expect(toBaseAmount(1, "tsp")).toEqual({ value: 5, unit: "ml" });
   });
   it("rejects bad input", () => {
     expect(toBaseAmount(0, "g")).toBeNull();
@@ -43,7 +44,10 @@ describe("formatAmount", () => {
     [{ value: 1, unit: "count" }, "1"],
     [{ value: 150, unit: "g" }, "150g"],
     [{ value: 120, unit: "ml" }, "120ml"],
-    [{ value: 1.5, unit: "tsp" }, "1.5 tsp"],
+    [{ value: 7.5, unit: "ml" }, "1.5 tsp"],
+    [{ value: 15, unit: "ml" }, "1 tbsp"],
+    [{ value: 45, unit: "ml" }, "3 tbsp"],
+    [{ value: 60, unit: "ml" }, "60ml"],
     [{ value: 1 / 3, unit: "count" }, "0.33"],
   ] as const)("formats %o as %s", (amount, expected) => {
     expect(formatAmount(amount)).toBe(expected);
@@ -55,7 +59,7 @@ describe("toPantryAmount", () => {
     expect(toPantryAmount("2")).toEqual({ quantity: 2, unit: "pcs" });
     expect(toPantryAmount("1 kg")).toEqual({ quantity: 1000, unit: "g" });
     expect(toPantryAmount("300ml")).toEqual({ quantity: 300, unit: "ml" });
-    expect(toPantryAmount("1 tbsp")).toEqual({ quantity: 3, unit: "tsp" });
+    expect(toPantryAmount("1 tbsp")).toEqual({ quantity: 15, unit: "ml" });
   });
   it("leaves the amount empty when it can't be read", () => {
     expect(toPantryAmount("to taste")).toEqual({ quantity: null, unit: null });

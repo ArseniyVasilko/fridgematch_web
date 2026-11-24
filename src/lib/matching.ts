@@ -57,6 +57,8 @@ export interface RecipeMatch {
   score: number;
   /** Ingredients the user has at least part of (incl. basics). */
   haveCount: number;
+  /** Of haveCount, the ingredients the user has only part of the amount of. */
+  partialCount: number;
   total: number;
   missingCount: number;
   /** How many soon-to-expire pantry items this recipe uses up. */
@@ -69,6 +71,8 @@ export interface MatchOptions {
   assumeStaples?: boolean;
   /** Hide recipes with more missing ingredients than this. */
   maxMissing?: number | null;
+  /** Only recipes the user has enough of everything for (nothing missing or partial). */
+  onlyEnough?: boolean;
   now?: Date;
 }
 
@@ -120,6 +124,7 @@ export function evaluateRecipe(
 
   let points = 0;
   let haveCount = 0;
+  let partialCount = 0;
   let missingCount = 0;
   let matchedCount = 0;
   let usesExpiring = 0;
@@ -132,6 +137,7 @@ export function evaluateRecipe(
       if (!isStaple(ing.name)) matchedCount += 1;
       if (expiringSoon) usesExpiring += 1;
       haveCount += 1;
+      if (amount.status === "partial") partialCount += 1;
       points += amount.status === "have" ? 1 : 0.5;
       return { name: ing.name, measure: ing.measure, ...amount, matchedWith: candidates[0].name, expiringSoon };
     }
@@ -151,6 +157,7 @@ export function evaluateRecipe(
     recipe: summary,
     score: total === 0 ? 0 : points / total,
     haveCount,
+    partialCount,
     total,
     missingCount,
     usesExpiring,
@@ -167,7 +174,7 @@ export function rankRecipes(
 ): RecipeMatch[] {
   const byCore = prepare(userIngredients);
   if (byCore.size === 0) return [];
-  const { maxMissing = null } = options;
+  const { maxMissing = null, onlyEnough = false } = options;
 
   const results: RecipeMatch[] = [];
   for (const recipe of recipes) {
@@ -175,6 +182,7 @@ export function rankRecipes(
     // step 2: only recipes that use at least one of the user's ingredients
     if (matchedCount === 0) continue;
     if (maxMissing != null && match.missingCount > maxMissing) continue;
+    if (onlyEnough && (match.missingCount > 0 || match.partialCount > 0)) continue;
     results.push(match);
   }
 

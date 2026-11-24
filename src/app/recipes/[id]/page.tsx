@@ -159,11 +159,18 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                   </span>
                   <span className="text-sm font-bold text-muted">{Math.round(match.score * 100)}% match</span>
                 </p>
-                <MatchBar score={match.score} className="mt-2" />
+                <MatchBar haveCount={match.haveCount} partialCount={match.partialCount} total={match.total} className="mt-2" />
                 <p className="mt-2 text-sm text-muted">
-                  {match.missingCount === 0
+                  {match.missingCount === 0 && match.partialCount === 0
                     ? "You have everything you need. Time to cook!"
-                    : `${match.missingCount} ${match.missingCount === 1 ? "ingredient is" : "ingredients are"} missing.`}
+                    : [
+                        match.missingCount > 0 &&
+                          `${match.missingCount} ${match.missingCount === 1 ? "ingredient is" : "ingredients are"} missing.`,
+                        match.partialCount > 0 &&
+                          `You have only part of the amount of ${match.partialCount} ${match.partialCount === 1 ? "ingredient" : "ingredients"}.`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                   {match.usesExpiring > 0 && (
                     <span className="ml-1 inline-flex items-center gap-1 font-bold text-herb">
                       <Leaf className="h-3.5 w-3.5" aria-hidden /> Uses {match.usesExpiring} pantry {match.usesExpiring === 1 ? "item" : "items"} that expire soon.

@@ -16,6 +16,7 @@ export interface RecipeCardData {
 export interface RecipeCardMatch {
   score: number;
   haveCount: number;
+  partialCount: number;
   total: number;
   missingCount: number;
   usesExpiring: number;
@@ -72,10 +73,13 @@ export function RecipeCard({
           )}
           {match ? (
             <div className="mt-auto pt-1">
-              <MatchBar score={match.score} />
+              <MatchBar haveCount={match.haveCount} partialCount={match.partialCount} total={match.total} />
               <p className="mt-2 flex items-center justify-between gap-1 text-xs font-semibold text-ink sm:text-sm">
                 <span>
                   You have {match.haveCount}/{match.total} ingredients
+                  {match.partialCount > 0 && (
+                    <span className="font-bold text-amber"> ({match.partialCount} only partly)</span>
+                  )}
                   {match.missingCount > 0 && (
                     <span className="sr-only">, {match.missingCount} missing</span>
                   )}

@@ -47,6 +47,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const basics = matchMode ? parseBasics(sp.basics, saved.basics) : saved.basics;
   const missingParam = matchMode && MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
+  const onlyEnough = matchMode && first(sp.full) === "1";
   const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
   const diets = sp.diet == null ? saved.diets : parseList(sp.diet, DIETS.map((d) => d.id));
   const avoid =
@@ -70,6 +71,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     pantry: usePantry ? "1" : undefined,
     basics: basicsParam(basics),
     missing: missingParam === "any" ? undefined : missingParam,
+    full: onlyEnough ? "1" : undefined,
     type: types.join(",") || undefined,
     diet: listParam(diets, saved.diets),
     avoid: listParam(avoid, saved.avoid),
@@ -96,6 +98,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     ...(cuisine ? [{ label: cuisine, href: urlWith({ cuisine: undefined }) }] : []),
     // missing / basics only change anything when matching ingredients
     ...(matchMode && missingParam !== "any" ? [{ label: `Missing: ${missingLabel(missingParam)}`, href: urlWith({ missing: undefined }) }] : []),
+    ...(onlyEnough ? [{ label: "Enough of everything", href: urlWith({ full: undefined }) }] : []),
     ...(matchMode && !basics ? [{ label: "Without basics", href: urlWith({ basics: basicsParam(true) }) }] : []),
   ];
   // clearing also turns off the saved profile for this search; opening /recipes again brings it back
@@ -124,7 +127,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   let counts: OptionCounts;
   if (matchMode) {
     const filtered = applyFilters(
-      await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing }),
+      await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing, onlyEnough }),
       (m) => facets.get(m.recipe.id),
       filters,
     );
@@ -218,6 +221,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                     <span>
                       <span className="font-bold text-brown-dark">I have the basics</span>
                       <span className="block text-muted">Salt, pepper, oil and water</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="full" value="1" defaultChecked={onlyEnough} className="mt-0.5 h-4 w-4 accent-brown" />
+                    <span>
+                      <span className="font-bold text-brown-dark">Enough of everything</span>
+                      <span className="block text-muted">Only recipes you have the full amounts for (uses pantry quantities)</span>
                     </span>
                   </label>
                 </div>
