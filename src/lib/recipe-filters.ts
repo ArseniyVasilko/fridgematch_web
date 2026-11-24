@@ -55,7 +55,7 @@ const WORDS: Record<Flag, string[]> = {
     "chorizo", "salami", "sausage", "kielbasa", "kabano", "morcilla", "black pudding",
     "christma pudding", "mincemeat", "steak", "brisket", "oxtail", "chuck", "shank", "mince", "meat",
     "gravy", "lard", "suet", "gelatine", "gelatin", "marshmallow", "stock", "bouillon", "broth",
-    "fatback", "capon", "calf", "liver", "tripe",
+    "fatback", "capon", "calf", "liver", "tripe", "frankfurter", "wiener", "hot dog",
   ],
   fish: [
     "fish", "codfish", "seafood", "salmon", "tuna", "cod", "haddock", "hake", "herring", "mackerel",

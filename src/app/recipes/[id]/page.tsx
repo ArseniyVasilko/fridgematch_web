@@ -235,7 +235,12 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                       )}
                       {s && <span className="sr-only">: {s.label}</span>}
                     </span>
-                    <span className="text-right text-sm text-muted">{ing.measure}</span>
+                    <span className="text-right text-sm text-muted">
+                      {ing.measure}
+                      {comparing && ing.status === "partial" && ing.stillNeeded && (
+                        <span className="block text-xs font-bold text-amber">need {ing.stillNeeded} more</span>
+                      )}
+                    </span>
                     {buy && !userId && <LoginToAddLink href={loginUrl} name={ing.name} />}
                     {buy && userId && (
                       <AddIngredientButton

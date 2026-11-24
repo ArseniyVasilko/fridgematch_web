@@ -60,6 +60,7 @@ describe("dietsOf", () => {
 
   it("knows the meats, fish and doughs found in the Open Recipe Corpus", () => {
     expect(fits(["Smoked Fatback"])).not.toContain("vegetarian");
+    expect(fits(["Frankfurters"])).not.toContain("vegetarian");
     expect(fits(["Calf's Feet"])).not.toContain("vegetarian");
     expect(fits(["Carp"])).toContain("pescatarian");
     expect(fits(["Crayfish"])).not.toContain("vegetarian");

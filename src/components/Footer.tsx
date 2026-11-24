@@ -21,6 +21,15 @@ export function Footer() {
           >
             TheMealDB
           </a>
+          {" "}and the{" "}
+          <a
+            href="https://github.com/rippy1911/open-recipe-corpus"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-brown-dark"
+          >
+            Open Recipe Corpus
+          </a>
           {" "}· Aalto University
         </p>
       </div>

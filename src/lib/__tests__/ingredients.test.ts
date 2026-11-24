@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { coreIngredient, ingredientsMatch, isStaple, slugifyIngredient } from "../ingredients";
+import { coreIngredient, ingredientsMatch, isStaple, slugifyIngredient, titleCase } from "../ingredients";
+
+describe("titleCase", () => {
+  it("capitalises each word but not letters after an apostrophe", () => {
+    expect(titleCase("long-grain rice")).toBe("Long-Grain Rice");
+    expect(titleCase("quark (farmer's cheese)")).toBe("Quark (Farmer's Cheese)");
+    expect(titleCase("calf's feet")).toBe("Calf's Feet");
+  });
+});
 
 describe("slugifyIngredient", () => {
   it("lowercases, trims and singularises", () => {
