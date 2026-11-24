@@ -173,7 +173,7 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                         .join(" ")}
                   {match.usesExpiring > 0 && (
                     <span className="ml-1 inline-flex items-center gap-1 font-bold text-herb">
-                      <Leaf className="h-3.5 w-3.5" aria-hidden /> Uses {match.usesExpiring} pantry {match.usesExpiring === 1 ? "item" : "items"} that expire soon.
+                      <Leaf className="h-3.5 w-3.5" aria-hidden /> Uses {match.usesExpiring} pantry {match.usesExpiring === 1 ? "item that expires" : "items that expire"} soon.
                     </span>
                   )}
                 </p>
