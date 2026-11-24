@@ -1,6 +1,5 @@
 // FridgeMatch database schema (see design document, section 5.3)
-// Dev: SQLite. Production: change provider to "postgresql" and swap the
-// driver adapter in src/lib/db.ts (see README).
+// PostgreSQL (Neon). Apply changes with `npm run db:push` (see README).
 
 generator client {
   provider = "prisma-client"
@@ -8,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model User {
