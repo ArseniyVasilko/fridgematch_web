@@ -4,16 +4,13 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { Check, ListPlus, Loader2, Plus } from "lucide-react";
 import type { ShoppingFormState } from "@/app/actions/shopping";
-import { btn } from "./ui";
+import { btn, hoverHint as hint } from "./ui";
 
 /** addToShoppingList with the recipe and its items bound (see the recipe page). */
 type AddAction = (prev: ShoppingFormState, formData: FormData) => Promise<ShoppingFormState>;
 
 const plus =
   "flex h-7 w-7 items-center justify-center rounded-full border-2 border-brown/70 bg-card text-brown-dark transition hover:bg-sand disabled:opacity-60";
-/** Hover hint left of the +; sits inside a `group relative` wrapper. */
-const hint =
-  "pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-bold text-white transition group-hover:opacity-100 group-focus-within:opacity-100";
 const addAllLabel = (count: number) => `Add all missing to shopping list (${count})`;
 
 /** + on a missing ingredient, or a tick once it's on the list. */
@@ -28,7 +25,7 @@ export function AddIngredientButton({ action, name, onList }: { action: AddActio
     );
   }
   return (
-    <form action={formAction} className="group relative shrink-0">
+    <form action={formAction} className="group/hint relative shrink-0">
       <button disabled={pending} aria-label={`Add ${name} to shopping list`} className={plus}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
       </button>
@@ -60,7 +57,7 @@ export function AddAllMissingButton({ action, count }: { action: AddAction; coun
 /** Guests: the same + leads to Log in, then back to the recipe (design document, UC2). */
 export function LoginToAddLink({ href, name }: { href: string; name: string }) {
   return (
-    <span className="group relative shrink-0">
+    <span className="group/hint relative shrink-0">
       <Link href={href} aria-label={`Log in to add ${name} to your shopping list`} className={plus}>
         <Plus className="h-4 w-4" aria-hidden />
       </Link>

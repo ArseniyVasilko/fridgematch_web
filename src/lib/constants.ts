@@ -22,6 +22,8 @@ export const LIMITS = {
   recipesPerPage: 48,
   recipesPerPageMax: 500,
   featuredRecipes: 4,
+  /** Saved recipes shown in My Pantry before "Show more", and how many each click adds (fills 2- and 3-column rows). */
+  savedRecipesShown: 6,
   recentlyViewedStored: 8,
   recentlyViewedShown: 4,
   /** Autocomplete: suggestions shown, and rows read from the database to rank them. */
@@ -35,4 +37,6 @@ export const DURATIONS = {
   sessionMaxAgeSeconds: 30 * 24 * 60 * 60,
   recipeCatalogueCacheMs: 5 * 60 * 1000,
   ingredientSuggestionsCacheSeconds: 300,
+  /** How long a centred "Saved to My Saved Recipes" style popup stays on screen. */
+  noticeShownMs: 2500,
 } as const;

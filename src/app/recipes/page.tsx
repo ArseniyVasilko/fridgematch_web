@@ -16,7 +16,8 @@ import { getPantryForMatching } from "@/lib/pantry";
 import { getProfile } from "@/lib/profile";
 import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
 import { browseRecipes, getCuisines, getRecipeFacets, matchRecipes } from "@/lib/recipes";
-import { first, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
+import { getSavedRecipeIds } from "@/lib/saved";
+import { first, NONE, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Recipes" };
@@ -24,9 +25,6 @@ export const metadata: Metadata = { title: "Recipes" };
 const PAGE = LIMITS.recipesPerPage;
 const MISSING_OPTIONS = ["0", "1", "2", "3", "any"] as const;
 const missingLabel = (m: string) => (m === "any" ? "Any" : m === "0" ? "None" : `Up to ${m}`);
-/** URL value for "turned off for this search" when the profile has saved values. */
-const NONE = "none";
-
 function parseBasics(v: string | string[] | undefined, fallback: boolean): boolean {
   if (v == null) return fallback; // default: the profile's choice, or assume salt, pepper, oil and water
   const values = Array.isArray(v) ? v : [v];
@@ -46,6 +44,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
   const basics = matchMode ? parseBasics(sp.basics, saved.basics) : saved.basics;
   const missingParam = matchMode && MISSING_OPTIONS.includes(first(sp.missing) as never) ? first(sp.missing)! : "any";
   const maxMissing = missingParam === "any" ? null : Number(missingParam);
+  const onlyEnough = matchMode && first(sp.full) === "1";
   const types = parseList(sp.type, MEAL_TYPES.map((t) => t.id));
   const diets = sp.diet == null ? saved.diets : parseList(sp.diet, DIETS.map((d) => d.id));
   const avoid =
@@ -69,6 +68,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     pantry: usePantry ? "1" : undefined,
     basics: basicsParam(basics),
     missing: missingParam === "any" ? undefined : missingParam,
+    full: onlyEnough ? "1" : undefined,
     type: types.join(",") || undefined,
     diet: listParam(diets, saved.diets),
     avoid: listParam(avoid, saved.avoid),
@@ -95,6 +95,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     ...(cuisine ? [{ label: cuisine, href: urlWith({ cuisine: undefined }) }] : []),
     // missing / basics only change anything when matching ingredients
     ...(matchMode && missingParam !== "any" ? [{ label: `Missing: ${missingLabel(missingParam)}`, href: urlWith({ missing: undefined }) }] : []),
+    ...(onlyEnough ? [{ label: "Enough of everything", href: urlWith({ full: undefined }) }] : []),
     ...(matchMode && !basics ? [{ label: "Without basics", href: urlWith({ basics: basicsParam(true) }) }] : []),
   ];
   // clearing also turns off the saved profile for this search; opening /recipes again brings it back
@@ -116,12 +117,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
 
   const facets = await getRecipeFacets();
   const filters = { types, diets, cuisine, avoid };
+  const savedIds = userId ? await getSavedRecipeIds(userId) : new Set<number>();
+  const save = (id: number) => ({ saved: savedIds.has(id), loggedIn: !!userId });
   let cards: React.ReactNode[] = [];
   let total = 0;
   let counts: OptionCounts;
   if (matchMode) {
     const filtered = applyFilters(
-      await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing }),
+      await matchRecipes(userIngredients, { assumeStaples: basics, maxMissing, onlyEnough }),
       (m) => facets.get(m.recipe.id),
       filters,
     );
@@ -131,13 +134,13 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
     if (sort === "name") results = [...results].sort((a, b) => a.recipe.name.localeCompare(b.recipe.name));
     total = results.length;
     cards = results.slice(0, limit).map((m) => (
-      <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} />
+      <RecipeCard key={m.recipe.id} recipe={m.recipe} match={m} href={`/recipes/${m.recipe.id}${detailSuffix}`} save={save(m.recipe.id)} />
     ));
   } else {
     const filtered = applyFilters(await browseRecipes({ q }), (r) => facets.get(r.id), filters);
     counts = filtered.counts;
     total = filtered.items.length;
-    cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} />);
+    cards = filtered.items.slice(0, limit).map((r) => <RecipeCard key={r.id} recipe={r} href={`/recipes/${r.id}`} save={save(r.id)} />);
   }
 
   const title = matchMode ? "Recipe results" : q ? `Recipes for “${q}”` : "All recipes";
@@ -215,6 +218,14 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
                     <span>
                       <span className="font-bold text-brown-dark">I have the basics</span>
                       <span className="block text-muted">Salt, pepper, oil and water</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="full" value="1" defaultChecked={onlyEnough} className="mt-0.5 h-4 w-4 accent-brown" />
+                    <span>
+                      <span className="font-bold text-brown-dark">Enough of everything</span>
+                      <span className="block text-muted">Only recipes you have the full amounts for (uses pantry quantities)</span>
                     </span>
                   </label>
                 </div>

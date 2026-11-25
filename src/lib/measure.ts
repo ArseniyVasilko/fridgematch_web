@@ -6,7 +6,7 @@
  * as "have it / don't have it" by the matcher.
  */
 
-export type BaseUnit = "g" | "ml" | "tsp" | "count";
+export type BaseUnit = "g" | "ml" | "count";
 
 export interface Amount {
   value: number;
@@ -32,13 +32,14 @@ const UNIT_TABLE: Record<string, { unit: BaseUnit; factor: number }> = {
   liters: { unit: "ml", factor: 1000 },
   cup: { unit: "ml", factor: 240 },
   cups: { unit: "ml", factor: 240 },
-  tsp: { unit: "tsp", factor: 1 },
-  teaspoon: { unit: "tsp", factor: 1 },
-  teaspoons: { unit: "tsp", factor: 1 },
-  tbsp: { unit: "tsp", factor: 3 },
-  tbs: { unit: "tsp", factor: 3 },
-  tablespoon: { unit: "tsp", factor: 3 },
-  tablespoons: { unit: "tsp", factor: 3 },
+  // spoons are volumes too, so a pantry amount in ml can be compared with "2 tbsp"
+  tsp: { unit: "ml", factor: 5 },
+  teaspoon: { unit: "ml", factor: 5 },
+  teaspoons: { unit: "ml", factor: 5 },
+  tbsp: { unit: "ml", factor: 15 },
+  tbs: { unit: "ml", factor: 15 },
+  tablespoon: { unit: "ml", factor: 15 },
+  tablespoons: { unit: "ml", factor: 15 },
   pcs: { unit: "count", factor: 1 },
   pc: { unit: "count", factor: 1 },
   piece: { unit: "count", factor: 1 },
@@ -82,7 +83,7 @@ export function toBaseAmount(quantity: number, unit: string | null | undefined):
   return { value: quantity * u.factor, unit: u.unit };
 }
 
-const PANTRY_UNIT_FOR: Record<BaseUnit, (typeof PANTRY_UNITS)[number]> = { g: "g", ml: "ml", tsp: "tsp", count: "pcs" };
+const PANTRY_UNIT_FOR: Record<BaseUnit, (typeof PANTRY_UNITS)[number]> = { g: "g", ml: "ml", count: "pcs" };
 
 /** Quantity and unit for the pantry from a free-text measure (empty if it can't be read). */
 export function toPantryAmount(measure: string): { quantity: number | null; unit: string | null } {
@@ -90,12 +91,15 @@ export function toPantryAmount(measure: string): { quantity: number | null; unit
   return a ? { quantity: Math.round(a.value * 100) / 100, unit: PANTRY_UNIT_FOR[a.unit] } : { quantity: null, unit: null };
 }
 
-/** Write a base amount as a measure: "1", "150g", "120ml", "2 tsp". */
+const round2 = (v: number) => String(Math.round(v * 100) / 100);
+
+/** Write a base amount as a measure: "1", "150g", "120ml"; small volumes as "1 tbsp" or "2 tsp". */
 export function formatAmount({ value, unit }: Amount): string {
-  const n = String(Math.round(value * 100) / 100);
-  if (unit === "count") return n;
-  if (unit === "tsp") return `${n} tsp`;
-  return `${n}${unit}`;
+  if (unit === "count") return round2(value);
+  if (unit === "ml" && value < 60) {
+    return value % 15 === 0 ? `${round2(value / 15)} tbsp` : `${round2(value / 5)} tsp`;
+  }
+  return `${round2(value)}${unit}`;
 }
 
 /**

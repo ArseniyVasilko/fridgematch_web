@@ -144,5 +144,6 @@ export function isStaple(nameOrSlug: string): boolean {
 
 /** "chopped tomato" -> "Chopped Tomato" for display of user-typed names. */
 export function titleCase(s: string): string {
-  return s.replace(/\b([a-z])/g, (m) => m.toUpperCase());
+  // only after a space, hyphen or bracket, so "farmer's" doesn't become "Farmer'S"
+  return s.replace(/(^|[\s(-])([a-z])/g, (_, before: string, letter: string) => before + letter.toUpperCase());
 }

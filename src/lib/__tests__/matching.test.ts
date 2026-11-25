@@ -55,6 +55,17 @@ describe("evaluateRecipe", () => {
     expect(m.ingredients.find((i) => i.name === "Eggs")?.status).toBe("partial");
     expect(m.ingredients.find((i) => i.name === "Plain Flour")?.status).toBe("have");
     expect(m.score).toBeCloseTo(2.5 / 3);
+    expect(m.haveCount).toBe(3);
+    expect(m.partialCount).toBe(1);
+  });
+
+  it("compares a pantry amount in ml with a recipe amount in spoons", () => {
+    const short = evaluateRecipe(tomatoSoup, [{ name: "olive oil", quantity: 20, unit: "ml", fromPantry: true }]);
+    const oil = short.ingredients.find((i) => i.name === "Olive Oil");
+    expect(oil?.status).toBe("partial"); // 2 tbsp = 30 ml
+    expect(oil?.stillNeeded).toBe("2 tsp");
+    const enough = evaluateRecipe(tomatoSoup, [{ name: "olive oil", quantity: 1, unit: "l", fromPantry: true }]);
+    expect(enough.ingredients.find((i) => i.name === "Olive Oil")?.status).toBe("have");
   });
 
   it("says how much is still needed for partial ingredients", () => {
@@ -108,6 +119,17 @@ describe("rankRecipes", () => {
   it("filters by maximum missing ingredients", () => {
     const r = rankRecipes(all, [{ name: "eggs" }, { name: "rice" }, { name: "onion" }], { maxMissing: 1 });
     expect(r.map((x) => x.recipe.name)).toEqual(["Egg Fried Rice"]);
+  });
+
+  it("keeps only recipes the user has enough of everything for", () => {
+    const user = [
+      { name: "flour", quantity: 1, unit: "kg", fromPantry: true },
+      { name: "milk", quantity: 1, unit: "l", fromPantry: true },
+      { name: "eggs", quantity: 1, unit: "pcs", fromPantry: true },
+    ];
+    expect(rankRecipes(all, user, { onlyEnough: true })).toEqual([]); // pancakes need 2 eggs
+    const r = rankRecipes(all, [...user, { name: "eggs", quantity: 1, unit: "pcs", fromPantry: true }], { onlyEnough: true });
+    expect(r.map((x) => x.recipe.name)).toEqual(["Pancakes"]);
   });
 
   it("breaks ties in favour of recipes that use expiring food", () => {

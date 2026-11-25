@@ -57,6 +57,20 @@ describe("dietsOf", () => {
     expect(eggNoodles).not.toContain("gluten-free");
     expect(eggNoodles).not.toContain("egg-free");
   });
+
+  it("knows the meats, fish and doughs found in the Open Recipe Corpus", () => {
+    expect(fits(["Smoked Fatback"])).not.toContain("vegetarian");
+    expect(fits(["Frankfurters"])).not.toContain("vegetarian");
+    expect(fits(["Calf's Feet"])).not.toContain("vegetarian");
+    expect(fits(["Carp"])).toContain("pescatarian");
+    expect(fits(["Crayfish"])).not.toContain("vegetarian");
+    expect(fits(["Broth"])).not.toContain("vegetarian");
+    expect(fits(["Vegetable Broth"])).toContain("vegan");
+    expect(fits(["Fish Broth"])).toContain("pescatarian");
+    expect(fits(["Wafer Sheets"])).not.toContain("gluten-free");
+    expect(fits(["Rusks"])).not.toContain("gluten-free");
+    expect(fits(["Yeast Dough"])).not.toContain("gluten-free");
+  });
 });
 
 describe("mealTypeOf", () => {

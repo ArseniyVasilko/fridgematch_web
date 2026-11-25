@@ -31,6 +31,8 @@ export interface NormalisedMeal {
   sourceUrl: string | null;
   tags: string | null;
   ingredients: { name: string; measure: string }[];
+  /** Credit line required by the source's licence (Open Recipe Corpus). */
+  attribution?: string | null;
 }
 
 function baseUrl() {

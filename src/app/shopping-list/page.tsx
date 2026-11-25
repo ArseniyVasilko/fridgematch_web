@@ -22,7 +22,8 @@ export default async function ShoppingListPage() {
       </p>
 
       {groups.length > 0 ? (
-        <div className="mt-5 space-y-5">
+        // the move button follows the tick boxes on screen (they update before the server answers)
+        <div className="group/shop mt-5 space-y-5">
           {groups.map((g) => (
             <section key={g.recipe?.id ?? "other"} aria-label={g.recipe?.name ?? "Other items"}>
               <h2 className="font-sans text-lg font-extrabold text-ink">
@@ -41,13 +42,11 @@ export default async function ShoppingListPage() {
               </ul>
             </section>
           ))}
-          {groups.some((g) => g.items.some((i) => i.checked)) && (
-            <form action={moveCheckedToPantry}>
-              <SubmitButton className={btn.outline}>
-                <Refrigerator className="h-4 w-4" aria-hidden /> Move ticked to pantry
-              </SubmitButton>
-            </form>
-          )}
+          <form action={moveCheckedToPantry} className="hidden group-has-[[aria-checked=true]]/shop:block">
+            <SubmitButton className={btn.outline}>
+              <Refrigerator className="h-4 w-4" aria-hidden /> Move ticked to pantry
+            </SubmitButton>
+          </form>
         </div>
       ) : (
         <p className={`${card} mt-5 p-5 text-muted`}>

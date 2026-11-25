@@ -28,8 +28,12 @@ const FAQ = [
     a: "When you're logged in, each recipe shows what's missing from your pantry. Tap the + next to an ingredient, or Add all missing, to add it with the amount the recipe needs. If you only have part of an amount, only the rest is added. Your list is under Shopping list in the menu, grouped by recipe. You can add your own items, edit amounts and tick things off as you shop. Move ticked to pantry then adds everything you bought to your pantry in one go.",
   },
   {
+    q: "How do I save a recipe?",
+    a: "When you're logged in, tap the heart on a recipe card or next to the recipe's name. A message confirms it was saved to My Saved Recipes. To see your saved recipes, open My Pantry and scroll to My Saved Recipes at the bottom, or use the Saved recipes box on the home page. Opening a saved recipe gives you a Back to My Saved Recipes link. To remove a recipe, tap its heart again.",
+  },
+  {
     q: "Why don't recipes show cooking time or servings?",
-    a: "Our recipe data comes from TheMealDB, which doesn't include these yet. We show the meal type and cuisine instead.",
+    a: "TheMealDB, our main recipe source, doesn't include these yet. We show the meal type and cuisine instead.",
   },
 ];
 
@@ -64,6 +68,11 @@ export default function AboutPage() {
           Missing something? Tap <strong>+</strong> next to an ingredient, or <strong>Add all missing</strong>, to put it on your{" "}
           <Link href="/shopping-list" className="font-bold text-brown-dark underline">shopping list</Link>.
         </li>
+        <li>
+          Like a recipe? Tap the <strong>heart</strong> on it to save it. Your saved recipes are under{" "}
+          <Link href="/pantry#saved-recipes" className="font-bold text-brown-dark underline">My Saved Recipes</Link> at the
+          bottom of My Pantry.
+        </li>
       </ol>
 
       <h2 className="mt-10 text-3xl">Questions</h2>
@@ -83,7 +92,12 @@ export default function AboutPage() {
       </p>
       <p className="mt-4 text-sm text-muted">
         Recipe data and photos come from{" "}
-        <a href="https://www.themealdb.com" className="underline" target="_blank" rel="noreferrer">TheMealDB</a>. Only ingredient
+        <a href="https://www.themealdb.com" className="underline" target="_blank" rel="noreferrer">TheMealDB</a>. More recipes come from
+        the{" "}
+        <a href="https://github.com/rippy1911/open-recipe-corpus" className="underline" target="_blank" rel="noreferrer">
+          Open Recipe Corpus
+        </a>{" "}
+        (Wikibooks and public-domain cookbooks, machine-translated from Polish, CC BY-SA 4.0); these have no photos yet. Only ingredient
         and recipe searches are sent to it, never your account or pantry data. You can ask us to delete your account and data at any time.
       </p>
     </div>

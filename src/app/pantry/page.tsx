@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, ChefHat, ListChecks, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, ChefHat, Heart, ListChecks, Trash2 } from "lucide-react";
 import { clearExpiredItems } from "@/app/actions/pantry";
 import { JarIcon } from "@/components/illustrations";
 import { AddPantryItemForm, PantryItemActions } from "@/components/PantryForms";
+import { RecipeCard } from "@/components/RecipeCard";
 import { btn, card } from "@/components/ui";
-import { DURATIONS } from "@/lib/constants";
+import { DURATIONS, LIMITS } from "@/lib/constants";
 import { expiryLabel, expiryStatus, type ExpiryStatus } from "@/lib/expiry";
 import { getPantry, type PantryItemWithName } from "@/lib/pantry";
-import { recipesUrl } from "@/lib/search-params";
+import { getSavedRecipes } from "@/lib/saved";
+import { first, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { requireUserId } from "@/lib/session";
 
 export const metadata: Metadata = { title: "My Pantry" };
@@ -71,9 +73,14 @@ function Group({ title, items, hint }: { title: string; items: PantryItemWithNam
   );
 }
 
-export default async function PantryPage() {
+const SAVED_STEP = LIMITS.savedRecipesShown;
+
+export default async function PantryPage({ searchParams }: PageProps<"/pantry">) {
   const userId = await requireUserId("/pantry");
-  const items = await getPantry(userId);
+  const sp = (await searchParams) as SearchParams;
+  // ?saved=12 after "Show more"
+  const savedShown = Math.min(Math.max(Number(first(sp.saved)) || SAVED_STEP, SAVED_STEP), LIMITS.recipesPerPageMax);
+  const [items, saved] = await Promise.all([getPantry(userId), getSavedRecipes(userId, savedShown)]);
 
   const expired = items.filter((i) => expiryStatus(i.expiryDate) === "expired");
   const useSoon = items.filter((i) => ["today", "soon"].includes(expiryStatus(i.expiryDate)));
@@ -158,6 +165,43 @@ export default async function PantryPage() {
           )}
         </>
       )}
+
+      {/* the home page "Saved recipes" box and the recipe page's back link jump here */}
+      <section id="saved-recipes" aria-labelledby="saved-heading" className="mt-10 scroll-mt-4">
+        <h2 id="saved-heading" className="flex items-center gap-2 text-2xl">
+          <Heart className="h-5 w-5 text-tomato" fill="currentColor" aria-hidden /> My Saved Recipes
+          <span className="font-sans text-base font-bold text-muted">({saved.total})</span>
+        </h2>
+        {saved.total > 0 ? (
+          <>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+              {saved.recipes.map((r) => (
+                <RecipeCard
+                  key={r.id}
+                  recipe={r}
+                  // the recipe's back link returns to this many shown
+                  href={`/recipes/${r.id}?from=saved${savedShown > SAVED_STEP ? `&saved=${savedShown}` : ""}`}
+                  save={{ saved: true, loggedIn: true }}
+                />
+              ))}
+            </div>
+            {saved.total > savedShown && (
+              <div className="mt-4 flex justify-center">
+                <Link scroll={false} href={`/pantry?saved=${savedShown + SAVED_STEP}`} className={btn.outline}>
+                  Show more saved recipes <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className={`${card} mt-3 flex flex-col items-center gap-3 p-8 text-center`}>
+            <p className="max-w-sm text-muted">Tap the heart on any recipe to save it here.</p>
+            <Link href="/recipes" className={btn.outline}>
+              Browse recipes <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

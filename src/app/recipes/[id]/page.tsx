@@ -6,12 +6,14 @@ import { addToShoppingList } from "@/app/actions/shopping";
 import { MatchBar } from "@/components/MatchBar";
 import { RecipeImage } from "@/components/RecipeImage";
 import { TrackRecentlyViewed } from "@/components/RecentlyViewed";
+import { SaveRecipeButton } from "@/components/SaveRecipeButton";
 import { AddAllMissingButton, AddIngredientButton, LoginToAddAllLink, LoginToAddLink } from "@/components/ShoppingButtons";
 import { btn, card } from "@/components/ui";
 import type { IngredientMatch, UserIngredient } from "@/lib/matching";
 import { getPantryForMatching } from "@/lib/pantry";
 import { combineMeasures } from "@/lib/measure";
 import { evaluateForDetails, getRecipe } from "@/lib/recipes";
+import { isRecipeSaved } from "@/lib/saved";
 import { first, parseIngredientList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 import { getShoppingIngredientIds } from "@/lib/shopping";
@@ -56,17 +58,25 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
   // logged-in users opening a recipe without a search are compared with their pantry
   const usePantry = pantryParam || (!!userId && ingredients.length === 0);
   const fromSearch = ingredients.length > 0 || pantryParam;
+  // opened from My Saved Recipes in My Pantry; `saved` is how many it showed (after "Show more")
+  const fromSaved = first(sp.from) === "saved";
+  const savedShown = fromSaved && /^\d+$/.test(first(sp.saved) ?? "") ? first(sp.saved)! : null;
 
   const selfQuery = new URLSearchParams();
   if (ingredients.length) selfQuery.set("i", ingredients.join(","));
   if (pantryParam) selfQuery.set("pantry", "1");
   if (!basics) selfQuery.set("basics", "0");
+  if (fromSaved) selfQuery.set("from", "saved");
+  if (savedShown) selfQuery.set("saved", savedShown);
   const selfUrl = `/recipes/${recipe.id}${selfQuery.size ? `?${selfQuery}` : ""}`;
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(selfUrl)}`;
 
   if (pantryParam && !userId) redirect(loginUrl);
 
-  const pantry: UserIngredient[] = usePantry && userId ? await getPantryForMatching(userId) : [];
+  const [pantry, saved]: [UserIngredient[], boolean] = await Promise.all([
+    usePantry && userId ? getPantryForMatching(userId) : [],
+    userId ? isRecipeSaved(userId, recipe.id) : false,
+  ]);
   const user: UserIngredient[] = [...ingredients.map((name) => ({ name })), ...pantry];
   const comparing = user.length > 0 || usePantry;
   const match = evaluateForDetails(recipe, user, { assumeStaples: basics });
@@ -91,9 +101,11 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
     q.set("pantry", "1");
     return `/recipes/${recipe.id}?${q}`;
   })();
-  const backUrl = fromSearch
-    ? recipesUrl({ i: ingredients, pantry: pantryParam, basics: basics ? null : "0" })
-    : "/recipes";
+  const back = fromSaved
+    ? { href: `/pantry${savedShown ? `?saved=${savedShown}` : ""}#saved-recipes`, label: "Back to My Saved Recipes" }
+    : fromSearch
+      ? { href: recipesUrl({ i: ingredients, pantry: pantryParam, basics: basics ? null : "0" }), label: "Back to results" }
+      : { href: "/recipes", label: "All recipes" };
   const steps = toSteps(recipe.instructions);
   const shown = new Set([recipe.category, recipe.area].filter(Boolean).map((t) => t!.toLowerCase()));
   const tags = [...new Set(recipe.tags?.split(",").map((t) => t.trim()).filter(Boolean) ?? [])].filter(
@@ -105,8 +117,8 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
       <TrackRecentlyViewed
         recipe={{ id: recipe.id, name: recipe.name, category: recipe.category, area: recipe.area, imageUrl: recipe.imageUrl }}
       />
-      <Link href={backUrl} className={`${btn.ghost} -ml-3`}>
-        <ArrowLeft className="h-4 w-4" aria-hidden /> {fromSearch ? "Back to results" : "All recipes"}
+      <Link href={back.href} className={`${btn.ghost} -ml-3`}>
+        <ArrowLeft className="h-4 w-4" aria-hidden /> {back.label}
       </Link>
 
       <div className="mt-2 grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
@@ -117,7 +129,10 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
         </div>
 
         <div>
-          <h1 className="text-4xl leading-tight sm:text-5xl">{recipe.name}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-4xl leading-tight sm:text-5xl">{recipe.name}</h1>
+            <SaveRecipeButton recipeId={recipe.id} recipeName={recipe.name} saved={saved} loggedIn={!!userId} size="page" />
+          </div>
           <p className="mt-2 flex flex-wrap gap-2 text-sm font-semibold text-muted">
             {recipe.category && (
               <span className="inline-flex items-center gap-1 rounded-full bg-sand px-3 py-1">
@@ -144,14 +159,21 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                   </span>
                   <span className="text-sm font-bold text-muted">{Math.round(match.score * 100)}% match</span>
                 </p>
-                <MatchBar score={match.score} className="mt-2" />
+                <MatchBar haveCount={match.haveCount} partialCount={match.partialCount} total={match.total} className="mt-2" />
                 <p className="mt-2 text-sm text-muted">
-                  {match.missingCount === 0
+                  {match.missingCount === 0 && match.partialCount === 0
                     ? "You have everything you need. Time to cook!"
-                    : `${match.missingCount} ${match.missingCount === 1 ? "ingredient is" : "ingredients are"} missing.`}
+                    : [
+                        match.missingCount > 0 &&
+                          `${match.missingCount} ${match.missingCount === 1 ? "ingredient is" : "ingredients are"} missing.`,
+                        match.partialCount > 0 &&
+                          `You have only part of the amount of ${match.partialCount} ${match.partialCount === 1 ? "ingredient" : "ingredients"}.`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                   {match.usesExpiring > 0 && (
                     <span className="ml-1 inline-flex items-center gap-1 font-bold text-herb">
-                      <Leaf className="h-3.5 w-3.5" aria-hidden /> Uses {match.usesExpiring} pantry {match.usesExpiring === 1 ? "item" : "items"} that expire soon.
+                      <Leaf className="h-3.5 w-3.5" aria-hidden /> Uses {match.usesExpiring} pantry {match.usesExpiring === 1 ? "item that expires" : "items that expire"} soon.
                     </span>
                   )}
                 </p>
@@ -213,7 +235,12 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
                       )}
                       {s && <span className="sr-only">: {s.label}</span>}
                     </span>
-                    <span className="text-right text-sm text-muted">{ing.measure}</span>
+                    <span className="text-right text-sm text-muted">
+                      {ing.measure}
+                      {comparing && ing.status === "partial" && ing.stillNeeded && (
+                        <span className="block text-xs font-bold text-amber">need {ing.stillNeeded} more</span>
+                      )}
+                    </span>
                     {buy && !userId && <LoginToAddLink href={loginUrl} name={ing.name} />}
                     {buy && userId && (
                       <AddIngredientButton
@@ -272,6 +299,15 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
               Recipe and photo from{" "}
               <a className="underline" href={`https://www.themealdb.com/meal/${recipe.externalId}`} target="_blank" rel="noreferrer">
                 TheMealDB
+              </a>
+              .
+            </p>
+          )}
+          {recipe.attribution && (
+            <p className="mt-6 text-xs text-muted">
+              Recipe from {recipe.attribution}. Shared under{" "}
+              <a className="underline" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">
+                CC BY-SA 4.0
               </a>
               .
             </p>

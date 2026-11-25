@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Globe2, Leaf, UtensilsCrossed } from "lucide-react";
 import { MatchBar } from "./MatchBar";
 import { RecipeImage } from "./RecipeImage";
+import { SaveRecipeButton } from "./SaveRecipeButton";
 import { card } from "./ui";
 
 export interface RecipeCardData {
@@ -15,6 +16,7 @@ export interface RecipeCardData {
 export interface RecipeCardMatch {
   score: number;
   haveCount: number;
+  partialCount: number;
   total: number;
   missingCount: number;
   usesExpiring: number;
@@ -25,14 +27,23 @@ export function RecipeCard({
   match,
   href,
   compact = false,
+  save,
 }: {
   recipe: RecipeCardData;
   match?: RecipeCardMatch;
   href: string;
   compact?: boolean;
+  /** Shows the heart button. Left out where the saved state isn't known (Recently viewed). */
+  save?: { saved: boolean; loggedIn: boolean };
 }) {
   return (
-    <article className={`${card} group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md`}>
+    <article className={`${card} group relative flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md`}>
+      {/* outside the link: a button can't sit inside an <a> */}
+      {save && (
+        <div className="absolute right-4 top-4 z-10">
+          <SaveRecipeButton recipeId={recipe.id} recipeName={recipe.name} saved={save.saved} loggedIn={save.loggedIn} />
+        </div>
+      )}
       <Link href={href} className="flex flex-1 flex-col focus-visible:outline-offset-[-3px]">
         <div className={`relative m-2 mb-0 overflow-hidden rounded-xl ${compact ? "aspect-[4/3]" : "aspect-[4/3]"}`}>
           <RecipeImage src={recipe.imageUrl} alt={recipe.name} id={recipe.id} />
@@ -62,10 +73,13 @@ export function RecipeCard({
           )}
           {match ? (
             <div className="mt-auto pt-1">
-              <MatchBar score={match.score} />
+              <MatchBar haveCount={match.haveCount} partialCount={match.partialCount} total={match.total} />
               <p className="mt-2 flex items-center justify-between gap-1 text-xs font-semibold text-ink sm:text-sm">
                 <span>
                   You have {match.haveCount}/{match.total} ingredients
+                  {match.partialCount > 0 && (
+                    <span className="font-bold text-amber"> ({match.partialCount} only partly)</span>
+                  )}
                   {match.missingCount > 0 && (
                     <span className="sr-only">, {match.missingCount} missing</span>
                   )}

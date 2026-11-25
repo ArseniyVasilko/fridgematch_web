@@ -4,6 +4,33 @@ import { LIMITS } from "./constants";
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
+/** List value for "turned off for this search" when the profile has saved values (diet=none). */
+export const NONE = "none";
+
+/**
+ * The filter form's fields as a tidy query: the browser sends a checkbox's
+ * hidden fallback ("basics=0&basics=1") and NONE next to real values
+ * ("diet=none&diet=vegan"). Keeps "1" over "0", drops NONE when there are
+ * other values, drops empty fields and joins repeats with commas, which the
+ * page reads the same way.
+ */
+export function cleanQuery(entries: Iterable<[string, FormDataEntryValue]>): URLSearchParams {
+  const byKey = new Map<string, string[]>();
+  for (const [key, value] of entries) {
+    if (typeof value !== "string" || value === "") continue;
+    const values = byKey.get(key) ?? [];
+    if (!values.includes(value)) values.push(value);
+    byKey.set(key, values);
+  }
+  const out = new URLSearchParams();
+  for (const [key, all] of byKey) {
+    let values = all.includes("1") && all.includes("0") ? all.filter((v) => v !== "0") : all;
+    if (values.length > 1) values = values.filter((v) => v !== NONE);
+    out.set(key, values.join(","));
+  }
+  return out;
+}
+
 export function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
