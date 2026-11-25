@@ -17,7 +17,7 @@ import { getProfile } from "@/lib/profile";
 import { applyFilters, DIETS, MEAL_TYPES, type OptionCounts } from "@/lib/recipe-filters";
 import { browseRecipes, getCuisines, getRecipeFacets, matchRecipes } from "@/lib/recipes";
 import { getSavedRecipeIds } from "@/lib/saved";
-import { first, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
+import { first, NONE, parseIngredientList, parseList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Recipes" };
@@ -25,9 +25,6 @@ export const metadata: Metadata = { title: "Recipes" };
 const PAGE = LIMITS.recipesPerPage;
 const MISSING_OPTIONS = ["0", "1", "2", "3", "any"] as const;
 const missingLabel = (m: string) => (m === "any" ? "Any" : m === "0" ? "None" : `Up to ${m}`);
-/** URL value for "turned off for this search" when the profile has saved values. */
-const NONE = "none";
-
 function parseBasics(v: string | string[] | undefined, fallback: boolean): boolean {
   if (v == null) return fallback; // default: the profile's choice, or assume salt, pepper, oil and water
   const values = Array.isArray(v) ? v : [v];
