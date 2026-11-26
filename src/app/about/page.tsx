@@ -21,7 +21,11 @@ const FAQ = [
   },
   {
     q: "How do expiry reminders work?",
-    a: `Add an expiry date to items in My Pantry. Items expiring within ${DURATIONS.expiringSoonDays} days are highlighted at the top, with a shortcut to recipes that use them. Expired items are not used for matching.`,
+    a: `Add expiry dates in My Pantry. When you’re signed in, the home page shows a reminder if you have items expiring today or within ${DURATIONS.expiringSoonDays} days. Open My Pantry to see those items and find recipes that use them.`,
+  },
+  {
+    q: "How do I install FridgeMatch on my iPhone?",
+    a: "Open FridgeMatch in Safari. Open the Share menu and tap Add to Home Screen. If you see Open as Web App, turn it on, then tap Add. You can now launch FridgeMatch from its icon on your home screen.",
   },
   {
     q: "How does the shopping list work?",
