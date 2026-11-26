@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Heart, ListChecks, Refrigerator, Search, Users } from "lucide-react";
+import { ArrowRight, Heart,CalendarClock, ListChecks, Refrigerator, Search, Users } from "lucide-react";
 import { IngredientInput } from "@/components/IngredientInput";
 import { FridgeIllustration, JarIcon, MotionDashes, VeggiesIllustration, BowlArt } from "@/components/illustrations";
 import { MatchPantryButton } from "@/components/MatchPantryButton";
@@ -11,6 +11,7 @@ import { getPantryForMatching } from "@/lib/pantry";
 import { getFeaturedRecipes } from "@/lib/recipes";
 import { getSavedRecipeIds } from "@/lib/saved";
 import { getUserId } from "@/lib/session";
+import { isExpiringSoon } from "@/lib/expiry";
 
 const TRY_THESE = ["chicken", "eggs", "rice", "tomato", "onion"];
 
@@ -24,9 +25,16 @@ const FEATURES = [
 export default async function HomePage() {
   const [featured, userId] = await Promise.all([getFeaturedRecipes(LIMITS.featuredRecipes), getUserId()]);
   // expired items don't count: they aren't used for matching, so a pantry of only expired food is "empty"
-  const [pantryCount, savedIds] = userId
-    ? await Promise.all([getPantryForMatching(userId).then((p) => p.length), getSavedRecipeIds(userId)])
-    : [0, new Set<number>()];
+
+  const [pantry, savedIds] = userId
+    ? await Promise.all([getPantryForMatching(userId), getSavedRecipeIds(userId)])
+    : ([[], new Set<number>()] as const);
+
+  const pantryCount = pantry.length;
+  const now = new Date();
+  const expiringCount = pantry.filter((item) =>
+    isExpiringSoon(item.expiryDate, now),
+  ).length;
 
   return (
     <>
@@ -49,6 +57,22 @@ export default async function HomePage() {
           <VeggiesIllustration className="absolute bottom-4 right-6 hidden h-40 sm:block lg:hidden" />
         </div>
       </section>
+
+      {expiringCount > 0 && (
+        <section aria-label="Pantry expiry reminder" className="mx-auto mt-4 max-w-6xl px-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-line bg-amber-soft p-4">
+            <CalendarClock className="h-5 w-5 shrink-0 text-amber" aria-hidden />
+            <p className="min-w-0 flex-1 font-bold text-ink">
+              {expiringCount === 1
+                ? "1 pantry item expires soon"
+                : `${expiringCount} pantry items expire soon`}
+            </p>
+            <Link href="/pantry" className={`${btn.outline} text-sm`}>
+              View My Pantry <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section aria-label="What FridgeMatch does" className="mx-auto mt-6 grid max-w-6xl grid-cols-2 gap-3 px-4 md:grid-cols-4">

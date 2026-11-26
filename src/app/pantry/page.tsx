@@ -12,6 +12,7 @@ import { getPantry, type PantryItemWithName } from "@/lib/pantry";
 import { getSavedRecipes } from "@/lib/saved";
 import { first, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { requireUserId } from "@/lib/session";
+import { ExpiryPushSettings } from "@/components/ExpiryPushSettings";
 
 export const metadata: Metadata = { title: "My Pantry" };
 
@@ -165,6 +166,7 @@ export default async function PantryPage({ searchParams }: PageProps<"/pantry">)
           )}
         </>
       )}
+      <ExpiryPushSettings />
 
       {/* the home page "Saved recipes" box and the recipe page's back link jump here */}
       <section id="saved-recipes" aria-labelledby="saved-heading" className="mt-10 scroll-mt-4">

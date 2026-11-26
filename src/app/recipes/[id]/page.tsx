@@ -17,6 +17,10 @@ import { isRecipeSaved } from "@/lib/saved";
 import { first, parseIngredientList, recipesUrl, type SearchParams } from "@/lib/search-params";
 import { getUserId } from "@/lib/session";
 import { getShoppingIngredientIds } from "@/lib/shopping";
+import { markAsCooked } from "@/app/actions/cooking";
+import { MarkAsCooked } from "@/components/MarkAsCooked";
+import { planPantryDeductions } from "@/lib/cooking";
+import { getPantry } from "@/lib/pantry";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -72,6 +76,10 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(selfUrl)}`;
 
   if (pantryParam && !userId) redirect(loginUrl);
+
+  const cookingDeductions = userId
+    ? planPantryDeductions(recipe.ingredients, await getPantry(userId))
+    : [];
 
   const [pantry, saved]: [UserIngredient[], boolean] = await Promise.all([
     usePantry && userId ? getPantryForMatching(userId) : [],
@@ -279,6 +287,17 @@ export default async function RecipeDetailsPage({ params, searchParams }: PagePr
               ))}
             </ol>
           </section>
+
+          {userId && (
+            <MarkAsCooked
+              action={markAsCooked.bind(null, recipe.id, JSON.stringify(cookingDeductions))}
+              deductions={cookingDeductions.map(({ id, name, usedLabel }) => ({
+                id,
+                name,
+                usedLabel,
+              }))}
+            />
+          )}
 
           {(recipe.youtubeUrl || recipe.sourceUrl) && (
             <div className="mt-6 flex flex-wrap gap-2">
