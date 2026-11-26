@@ -25,6 +25,7 @@ model User {
   pantryItems   PantryItem[]
   shoppingItems ShoppingListItem[]
   savedRecipes  SavedRecipe[]
+  pushSubscriptions PushSubscription[]
 }
 
 /// Canonical ingredient names (synced from TheMealDB's ingredient list plus
@@ -119,4 +120,15 @@ model RecipeIngredient {
 
   @@index([ingredientId])
   @@index([recipeId])
+}
+
+model PushSubscription {
+  endpoint    String  @id
+  userId      Int
+  p256dh      String
+  auth        String
+  lastSentDay String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
