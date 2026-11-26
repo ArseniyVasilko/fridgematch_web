@@ -339,7 +339,10 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
           )}
 
           {cards.length > 0 ? (
+          <>
+            <h2 className="sr-only">Results</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">{cards}</div>
+          </>
           ) : (
             <div className={`${card} mt-4 flex flex-col items-center gap-3 p-8 text-center`}>
               <p className="font-display text-2xl text-brown-dark">No recipes found</p>
