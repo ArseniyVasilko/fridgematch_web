@@ -3,8 +3,11 @@ import { prisma } from "./db";
 import { expiryStatus } from "./expiry";
 import type { UserIngredient } from "./matching";
 
-export async function getPantry(userId: number) {
-  const items = await prisma.pantryItem.findMany({
+export async function getPantry(
+  userId: number,
+  db: Pick<typeof prisma, "pantryItem"> = prisma,
+) {
+  const items = await db.pantryItem.findMany({
     where: { userId },
     include: { ingredient: { select: { name: true } } },
   });
